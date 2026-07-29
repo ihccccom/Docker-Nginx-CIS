@@ -330,8 +330,8 @@ RUN set -eux; \
       cd ${NGINX_DIR}/nginx; \
       cp ${NGINX_SRC_DIR}/ngx_http_tunnel_module/patches/header_parsing.patch .; \
       cp ${NGINX_SRC_DIR}/ngx_http_tunnel_module/patches/upstream.patch .; \
-      git apply patches/header_parsing.patch; \
-      git apply patches/upstream.patch; \
+      git apply header_parsing.patch; \
+      git apply upstream.patch; \
       rm -f header_parsing.patch; \
       rm -f upstream.patch; \
     fi
