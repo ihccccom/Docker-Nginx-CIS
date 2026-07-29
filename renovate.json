@@ -44,7 +44,7 @@
     },
     {
       "matchPackageNames": ["ZihaoFU245/ngx_http_tunnel_module"],
-      "ignoreVersions": ["^1\\.18$"]
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/"
     },
     {
       "matchPackageNames": [
