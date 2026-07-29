@@ -44,6 +44,7 @@
     },
     {
       "matchPackageNames": ["ZihaoFU245/ngx_http_tunnel_module"],
+      "description": "过滤不规范的TAG，只允许符合规范的版本",
       "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/"
     },
     {
