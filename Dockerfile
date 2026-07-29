@@ -84,10 +84,10 @@ ARG TUNNEL_MODULE_VERSION="1.2.4"
 ARG MODSECURITY_NGINX_VERSION="v1.0.4"
 
 # OWASP CRS 规则集版本 (留空自动获取最新版, 例如: "v4.8.0")
-ARG OWASP_CRS_VERSION="v4.24.0"
+ARG OWASP_CRS_VERSION="v4.28.0"
 
 # ModSecurity 核心引擎版本
-ARG MODSECURITY_VERSION="v3.0.14"
+ARG MODSECURITY_VERSION="v3.0.16"
 
 
 ###############################################
