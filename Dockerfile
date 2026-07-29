@@ -351,7 +351,7 @@ RUN set -eux; \
 RUN set -eux; \
     if [ "${USE_modsecurity}" = "true" ]; then \
       cd ${NGINX_SRC_DIR}; \
-      git clone --depth 1 -b "${MODSECURITY_VERSION}" --single-branch \
+      git clone --depth 1 --recursive -b "${MODSECURITY_VERSION}" --single-branch \
         https://github.com/SpiderLabs/ModSecurity ModSecurity; \
       cd ModSecurity; \
       git submodule update --recursive; \
