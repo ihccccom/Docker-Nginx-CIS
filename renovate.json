@@ -43,7 +43,6 @@
       "groupName": "第三方 Nginx 模块"
     },
     {
-      # 过滤开发者写错的版本号v1.18
       "matchPackageNames": ["ZihaoFU245/ngx_http_tunnel_module"],
       "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/"
     },
