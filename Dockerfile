@@ -78,7 +78,7 @@ ARG HEADERS_MORE_VERSION="0.39"
 
 # ngx_http_tunnel_module 版本 (留空自动获取最新版, 例如: "v0.0.7")
 # 此模块获取最新版本失效，未修正，务必填写版本号
-ARG TUNNEL_MODULE_VERSION="1.2.4"
+ARG TUNNEL_MODULE_VERSION="1.2.3"
 
 # ModSecurity-nginx 连接器版本 (留空使用最新版, 例如: "v1.0.3")
 ARG MODSECURITY_NGINX_VERSION="v1.0.4"
