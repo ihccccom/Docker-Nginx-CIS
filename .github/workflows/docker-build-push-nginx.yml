@@ -4,7 +4,7 @@
 # =======================================================
 #
 # 触发条件：
-#   - 推送到 main 分支且 nginx/ 目录有变更
+#   - 推送到 main 分支且 Dockerfile 或相关配置有变更
 #   - 创建版本标签（v*.*.*）
 #   - 手动触发（workflow_dispatch）
 #
@@ -19,7 +19,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'nginx/**'
+      - 'Dockerfile'
+      - 'nginx.conf'   # 如果您有其他相关配置文件，可按需添加
       - '.github/workflows/docker-build-push.yml'
     tags:
       - 'v*.*.*'
@@ -101,8 +102,8 @@ jobs:
       - name: Extract versions from Dockerfile
         id: versions
         run: |
-          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
-          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' Dockerfile | cut -d'=' -f2)
+          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' Dockerfile | cut -d'=' -f2)
           if [ -z "$NGINX_VER" ] || [ -z "$OPENSSL_VER" ]; then
             echo "错误：无法从 Dockerfile 提取版本号"
             exit 1
@@ -152,8 +153,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v7
         with:
-          context: ./nginx
-          file: ./nginx/Dockerfile
+          context: .
+          file: ./Dockerfile
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
@@ -165,7 +166,6 @@ jobs:
             USE_modsecurity_nginx=${{ github.event.inputs.use_modsecurity || 'true' }}
             OWASP_CRS_VERSION=${{ github.event.inputs.owasp_crs_version || '' }}
             EXTRA_NGINX_MODULES=${{ github.event.inputs.extra_nginx_modules || '' }}
-
 
       # ==========================================
       # 7. 上传 digest 供 merge job 使用
@@ -206,8 +206,8 @@ jobs:
       - name: Extract versions from Dockerfile
         id: versions
         run: |
-          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
-          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' Dockerfile | cut -d'=' -f2)
+          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' Dockerfile | cut -d'=' -f2)
           if [ -z "$NGINX_VER" ] || [ -z "$OPENSSL_VER" ]; then
             echo "错误：无法从 Dockerfile 提取版本号"
             exit 1
@@ -257,8 +257,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v7
         with:
-          context: ./nginx
-          file: ./nginx/Dockerfile
+          context: .
+          file: ./Dockerfile
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/arm64
@@ -270,7 +270,6 @@ jobs:
             USE_modsecurity_nginx=${{ github.event.inputs.use_modsecurity || 'true' }}
             OWASP_CRS_VERSION=${{ github.event.inputs.owasp_crs_version || '' }}
             EXTRA_NGINX_MODULES=${{ github.event.inputs.extra_nginx_modules || '' }}
-
 
       # ==========================================
       # 7. 上传 digest 供 merge job 使用
@@ -312,8 +311,8 @@ jobs:
       - name: Extract versions from Dockerfile
         id: versions
         run: |
-          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
-          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' Dockerfile | cut -d'=' -f2)
+          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' Dockerfile | cut -d'=' -f2)
           if [ -z "$NGINX_VER" ] || [ -z "$OPENSSL_VER" ]; then
             echo "错误：无法从 Dockerfile 提取版本号"
             exit 1
