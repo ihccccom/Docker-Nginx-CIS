@@ -24,6 +24,9 @@ on:
       - '.github/workflows/docker-build-push.yml'
     tags:
       - 'v*.*.*'
+      - 'V*.*.*'       # 🌟 支持大写 V 开头
+      - 'v*.*.*.*'     # 🌟 支持四段式小写 v
+      - 'V*.*.*.*'     # 🌟 支持四段式大写 V
   workflow_dispatch:
     inputs:
       nginx_version:
