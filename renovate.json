@@ -1,0 +1,163 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "dependencyDashboard": true,
+  "labels": ["dependencies"],
+
+  "packageRules": [
+    {
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["debian"],
+      "groupName": "Debian 基础镜像"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "matchPackageNames": ["nginx/nginx"],
+      "description": "nginx 只允许 stable 分支（第二段版本号为偶数，如 1.30.x），排除 mainline（1.31.x 等）",
+      "allowedVersions": "/^1\\.(\\d*[02468])\\.\\d+$/",
+      "groupName": "Nginx 核心 (nginx + openssl)"
+    },
+    {
+      "matchPackageNames": ["openssl/openssl"],
+      "description": "OpenSSL 锁定在当前 LTS 分支 3.5.x（支持至2030-04-08），仅自动升级补丁版本；下一个 LTS（4.2，预计2027-04）发布后需人工评估再放开",
+      "allowedVersions": "/^3\\.5\\./",
+      "groupName": "Nginx 核心 (nginx + openssl)"
+    },
+    {
+      "matchPackageNames": ["nginx/nginx", "openssl/openssl"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchPackageNames": [
+        "PhilipHazel/pcre2",
+        "aperezdc/ngx-fancyindex",
+        "FRiCKLE/ngx_cache_purge",
+        "openresty/headers-more-nginx-module",
+        "ZihaoFU245/ngx_http_tunnel_module",
+        "google/ngx_brotli"
+      ],
+      "groupName": "第三方 Nginx 模块"
+    },
+    {
+      "matchPackageNames": [
+        "SpiderLabs/ModSecurity",
+        "owasp-modsecurity/ModSecurity-nginx",
+        "coreruleset/coreruleset"
+      ],
+      "groupName": "ModSecurity WAF 相关组件",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchPackageNames": [
+        "SpiderLabs/ModSecurity",
+        "owasp-modsecurity/ModSecurity-nginx",
+        "coreruleset/coreruleset"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "ModSecurity WAF 相关组件"
+    },
+    {
+      "matchFileNames": ["nginx/Dockerfile"],
+      "prBodyNotes": [
+        "⚠️ 该版本号在 Dockerfile 中被源码编译使用，合并前请触发一次完整构建（含 `docker build`），并确认 `ngx_http_tunnel_module` 的 `header_parsing.patch` 与 `upstream.patch` 仍可成功应用到当前 nginx 版本。"
+      ]
+    }
+  ],
+
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Nginx 主程序版本 (nginx.org 源码，Renovate 无原生 nginx.org 数据源，用 GitHub 镜像 tag 比对)",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG NGINX_VERSION=(?<currentValue>[\\d.]+)"],
+      "depNameTemplate": "nginx/nginx",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^release-(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "OpenSSL 版本",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG OPENSSL_VERSION=(?<currentValue>[\\d.]+)"],
+      "depNameTemplate": "openssl/openssl",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^openssl-(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "PCRE2 版本 (ARG 值本身含 pcre2- 前缀，与 GitHub Release tag 完全一致)",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG PCRE2_VERSION=\"(?<currentValue>pcre2-[\\d.]+)\""],
+      "depNameTemplate": "PhilipHazel/pcre2",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "ngx-fancyindex 版本",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG FANCYINDEX_VERSION=(?<currentValue>[\\d.]+)"],
+      "depNameTemplate": "aperezdc/ngx-fancyindex",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "ngx_cache_purge 版本",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG NGX_CACHE_PURGE_VERSION=\"(?<currentValue>[\\d.]+)\""],
+      "depNameTemplate": "FRiCKLE/ngx_cache_purge",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "customType": "regex",
+      "description": "headers-more-nginx-module 版本 (ARG 值不带 v 前缀，tag 带 v)",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG HEADERS_MORE_VERSION=\"(?<currentValue>[\\d.]+)\""],
+      "depNameTemplate": "openresty/headers-more-nginx-module",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "ngx_http_tunnel_module 版本（Dockerfile 保存纯版本号，GitHub Tag 为 release-x.y.z）",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": [
+      "ARG TUNNEL_MODULE_VERSION=\"(?<currentValue>[\\d.]+)\""
+    ],
+      "depNameTemplate": "ZihaoFU245/ngx_http_tunnel_module",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^release-(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "ModSecurity-nginx 连接器版本 (ARG 值本身带 v 前缀)",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG MODSECURITY_NGINX_VERSION=\"(?<currentValue>v[\\d.]+)\""],
+      "depNameTemplate": "owasp-modsecurity/ModSecurity-nginx",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "customType": "regex",
+      "description": "OWASP CRS 规则集版本 (ARG 值本身带 v 前缀)",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG OWASP_CRS_VERSION=\"(?<currentValue>v[\\d.]+)\""],
+      "depNameTemplate": "coreruleset/coreruleset",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "ModSecurity 核心引擎版本 (ARG 值本身带 v 前缀)",
+      "fileMatch": ["^nginx/Dockerfile$"],
+      "matchStrings": ["ARG MODSECURITY_VERSION=\"(?<currentValue>v[\\d.]+)\""],
+      "depNameTemplate": "SpiderLabs/ModSecurity",
+      "datasourceTemplate": "github-tags"
+    }
+  ],
+
+  "ignoreDeps": []
+}

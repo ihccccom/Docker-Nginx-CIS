@@ -1,0 +1,23 @@
+# =======================================================
+# Docker 构建上下文排除文件
+# 减小构建上下文大小，加速构建过程
+# =======================================================
+
+.git
+.gitignore
+*.md
+LICENSE
+nginx-install.sh
+
+# 安全配置和测试文件不需要在构建上下文中
+security/
+tests/
+
+# GitHub Actions 工作流
+.github/
+
+# 其他 compose 文件
+docker-compose.ghcr.yml
+
+# 部署包目录
+deploy/

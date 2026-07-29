@@ -1,0 +1,403 @@
+# =======================================================
+# GitHub Actions 工作流：构建并发布 Nginx Docker 镜像
+# 构建安全加固的 Nginx 镜像并推送到 Docker Hub
+# =======================================================
+#
+# 触发条件：
+#   - 推送到 main 分支且 nginx/ 目录有变更
+#   - 创建版本标签（v*.*.*）
+#   - 手动触发（workflow_dispatch）
+#
+# 发布地址：
+#   <DOCKERHUB_USERNAME>/nginx:latest
+#   <DOCKERHUB_USERNAME>/nginx:nginx-<版本号>
+#
+
+name: Build and Push Nginx Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'nginx/**'
+      - '.github/workflows/docker-build-push.yml'
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      nginx_version:
+        description: 'Nginx 版本号 (留空使用 Dockerfile 默认值)'
+        required: false
+        default: ''
+      openssl_version:
+        description: 'OpenSSL 版本号 (留空使用 Dockerfile 默认值)'
+        required: false
+        default: ''
+      owasp_crs_version:
+        description: 'OWASP CRS 版本 (留空自动获取最新)'
+        required: false
+        default: ''
+      use_modsecurity:
+        description: '启用 ModSecurity WAF'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      use_owasp:
+        description: '启用 OWASP 核心规则集'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      extra_nginx_modules:
+        description: '额外 Nginx 模块 (如: --add-module=/path/to/mod)'
+        required: false
+        default: ''
+      platforms:
+        description: '构建平台（多架构）'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+        type: choice
+        options:
+          - 'linux/amd64'
+          - 'linux/arm64'
+          - 'linux/amd64,linux/arm64'
+
+# 确保同一分支不会并发构建
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 镜像名称：<DOCKERHUB_USERNAME>/nginx
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/nginx
+
+jobs:
+  # ============================================================
+  # AMD64 原生构建
+  # ============================================================
+  build-amd64:
+    name: Build & Push Docker Image (amd64)
+    if: contains(github.event.inputs.platforms || 'linux/amd64,linux/arm64', 'amd64')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      # ==========================================
+      # 1. 签出代码
+      # ==========================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ==========================================
+      # 2. 从 Dockerfile 提取版本号（动态获取，避免硬编码）
+      # ==========================================
+      - name: Extract versions from Dockerfile
+        id: versions
+        run: |
+          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          if [ -z "$NGINX_VER" ] || [ -z "$OPENSSL_VER" ]; then
+            echo "错误：无法从 Dockerfile 提取版本号"
+            exit 1
+          fi
+          echo "nginx_version=${NGINX_VER}" >> "$GITHUB_OUTPUT"
+          echo "openssl_version=${OPENSSL_VER}" >> "$GITHUB_OUTPUT"
+          echo "Dockerfile NGINX_VERSION=${NGINX_VER}"
+          echo "Dockerfile OPENSSL_VERSION=${OPENSSL_VER}"
+
+      # ==========================================
+      # 3. 设置 Docker Buildx（支持多架构构建）
+      # ==========================================
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ==========================================
+      # 4. 登录 Docker Hub
+      # ==========================================
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ==========================================
+      # 5. 提取 Docker 元数据（标签和注释）
+      # ==========================================
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            # 版本标签：v1.0.0 → 1.0.0, 1.0, 1
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # main 分支推送 → latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            # 包含 Nginx 版本号（动态从 Dockerfile 获取）
+            type=raw,value=nginx-${{ github.event.inputs.nginx_version || steps.versions.outputs.nginx_version }}
+
+      # ==========================================
+      # 6. 构建并推送 Docker 镜像
+      # ==========================================
+      - name: Build and Push Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nginx
+          file: ./nginx/Dockerfile
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          build-args: |
+            NGINX_VERSION=${{ github.event.inputs.nginx_version || steps.versions.outputs.nginx_version }}
+            OPENSSL_VERSION=${{ github.event.inputs.openssl_version || steps.versions.outputs.openssl_version }}
+            USE_modsecurity=${{ github.event.inputs.use_modsecurity || 'true' }}
+            USE_owasp=${{ github.event.inputs.use_owasp || 'true' }}
+            USE_modsecurity_nginx=${{ github.event.inputs.use_modsecurity || 'true' }}
+            OWASP_CRS_VERSION=${{ github.event.inputs.owasp_crs_version || '' }}
+            EXTRA_NGINX_MODULES=${{ github.event.inputs.extra_nginx_modules || '' }}
+
+
+      # ==========================================
+      # 7. 上传 digest 供 merge job 使用
+      # ==========================================
+      - name: Upload AMD64 digest
+        run: |
+          mkdir -p /tmp/digests
+          echo "${{ steps.build.outputs.digest }}" > /tmp/digests/amd64
+
+      - name: Upload AMD64 digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-amd64
+          path: /tmp/digests/amd64
+          retention-days: 1
+
+  # ============================================================
+  # ARM64 原生构建（使用原生 ARM runner，彻底避免 QEMU 超时）
+  # ============================================================
+  build-arm64:
+    name: Build & Push Docker Image (arm64)
+    if: contains(github.event.inputs.platforms || 'linux/amd64,linux/arm64', 'arm64')
+    runs-on: ubuntu-24.04-arm
+
+    permissions:
+      contents: read
+
+    steps:
+      # ==========================================
+      # 1. 签出代码
+      # ==========================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ==========================================
+      # 2. 从 Dockerfile 提取版本号（动态获取，避免硬编码）
+      # ==========================================
+      - name: Extract versions from Dockerfile
+        id: versions
+        run: |
+          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          if [ -z "$NGINX_VER" ] || [ -z "$OPENSSL_VER" ]; then
+            echo "错误：无法从 Dockerfile 提取版本号"
+            exit 1
+          fi
+          echo "nginx_version=${NGINX_VER}" >> "$GITHUB_OUTPUT"
+          echo "openssl_version=${OPENSSL_VER}" >> "$GITHUB_OUTPUT"
+          echo "Dockerfile NGINX_VERSION=${NGINX_VER}"
+          echo "Dockerfile OPENSSL_VERSION=${OPENSSL_VER}"
+
+      # ==========================================
+      # 3. 设置 Docker Buildx（支持多架构构建）
+      # ==========================================
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ==========================================
+      # 4. 登录 Docker Hub
+      # ==========================================
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ==========================================
+      # 5. 提取 Docker 元数据（标签和注释）
+      # ==========================================
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            # 版本标签：v1.0.0 → 1.0.0, 1.0, 1
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # main 分支推送 → latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            # 包含 Nginx 版本号（动态从 Dockerfile 获取）
+            type=raw,value=nginx-${{ github.event.inputs.nginx_version || steps.versions.outputs.nginx_version }}
+
+      # ==========================================
+      # 6. 构建并推送 Docker 镜像
+      # ==========================================
+      - name: Build and Push Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nginx
+          file: ./nginx/Dockerfile
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/arm64
+          build-args: |
+            NGINX_VERSION=${{ github.event.inputs.nginx_version || steps.versions.outputs.nginx_version }}
+            OPENSSL_VERSION=${{ github.event.inputs.openssl_version || steps.versions.outputs.openssl_version }}
+            USE_modsecurity=${{ github.event.inputs.use_modsecurity || 'true' }}
+            USE_owasp=${{ github.event.inputs.use_owasp || 'true' }}
+            USE_modsecurity_nginx=${{ github.event.inputs.use_modsecurity || 'true' }}
+            OWASP_CRS_VERSION=${{ github.event.inputs.owasp_crs_version || '' }}
+            EXTRA_NGINX_MODULES=${{ github.event.inputs.extra_nginx_modules || '' }}
+
+
+      # ==========================================
+      # 7. 上传 digest 供 merge job 使用
+      # ==========================================
+      - name: Upload ARM64 digest
+        run: |
+          mkdir -p /tmp/digests
+          echo "${{ steps.build.outputs.digest }}" > /tmp/digests/arm64
+
+      - name: Upload ARM64 digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-arm64
+          path: /tmp/digests/arm64
+          retention-days: 1
+
+  # ============================================================
+  # 合并多架构 manifest（两个平台都构建完成后执行）
+  # ============================================================
+  merge:
+    name: Merge multi-arch manifest & Push tags
+    runs-on: ubuntu-latest
+    needs: [build-amd64, build-arm64]
+    if: always() && !failure() && !cancelled()
+
+    permissions:
+      contents: read
+
+    steps:
+      # ==========================================
+      # 1. 签出代码
+      # ==========================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ==========================================
+      # 2. 从 Dockerfile 提取版本号
+      # ==========================================
+      - name: Extract versions from Dockerfile
+        id: versions
+        run: |
+          NGINX_VER=$(grep -m1 '^ARG NGINX_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          OPENSSL_VER=$(grep -m1 '^ARG OPENSSL_VERSION=' nginx/Dockerfile | cut -d'=' -f2)
+          if [ -z "$NGINX_VER" ] || [ -z "$OPENSSL_VER" ]; then
+            echo "错误：无法从 Dockerfile 提取版本号"
+            exit 1
+          fi
+          echo "nginx_version=${NGINX_VER}" >> "$GITHUB_OUTPUT"
+          echo "openssl_version=${OPENSSL_VER}" >> "$GITHUB_OUTPUT"
+          echo "Dockerfile NGINX_VERSION=${NGINX_VER}"
+          echo "Dockerfile OPENSSL_VERSION=${OPENSSL_VER}"
+
+      # ==========================================
+      # 3. 下载所有平台的 digest
+      # ==========================================
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      # ==========================================
+      # 4. 设置 Docker Buildx
+      # ==========================================
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ==========================================
+      # 5. 登录 Docker Hub
+      # ==========================================
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ==========================================
+      # 6. 提取 Docker 元数据（标签和注释）
+      # ==========================================
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            # 版本标签：v1.0.0 → 1.0.0, 1.0, 1
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # main 分支推送 → latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            # 包含 Nginx 版本号（动态从 Dockerfile 获取）
+            type=raw,value=nginx-${{ github.event.inputs.nginx_version || steps.versions.outputs.nginx_version }}
+
+      # ==========================================
+      # 7. 合并多架构 manifest 并打 tag
+      # ==========================================
+      - name: Create and push multi-arch manifest
+        run: |
+          DIGEST_ARGS=""
+          for f in /tmp/digests/*; do
+            DIGEST=$(cat "$f")
+            [ -n "$DIGEST" ] && DIGEST_ARGS="$DIGEST_ARGS ${{ env.IMAGE_NAME }}@${DIGEST}"
+          done
+
+          TAG_ARGS=""
+          while IFS= read -r tag; do
+            [ -n "$tag" ] && TAG_ARGS="$TAG_ARGS --tag $tag"
+          done <<< "${{ steps.meta.outputs.tags }}"
+
+          docker buildx imagetools create $TAG_ARGS $DIGEST_ARGS
+
+      # ==========================================
+      # 8. 输出构建信息
+      # ==========================================
+      - name: Print image info
+        run: |
+          echo "============================================="
+          echo " Docker 镜像构建完成"
+          echo "============================================="
+          echo ""
+          echo "镜像标签:"
+          echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n' | sed 's/^/  - /'
+          echo ""
+          echo "拉取命令:"
+          echo "  docker pull ${{ env.IMAGE_NAME }}:latest"
+          echo ""
+          echo "运行命令:"
+          echo "  docker run -d -p 80:80 -p 443:443 ${{ env.IMAGE_NAME }}:latest"

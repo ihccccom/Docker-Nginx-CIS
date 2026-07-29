@@ -1,0 +1,132 @@
+# =======================================================
+# Nginx Docker Compose - 拉取预构建镜像部署
+# 适用于直接使用 GitHub Actions 预构建的镜像
+# 符合 CIS Docker Benchmark 安全基准
+# =======================================================
+#
+# 使用方法:
+#   1. 修改下方 image 地址为你的 Docker Hub 镜像地址
+#   2. 启动: docker compose up -d
+#   3. 停止: docker compose down
+#   4. 日志: docker compose logs -f nginx
+#
+# 首次使用需要登录 Docker Hub（避免在命令行直接暴露 Token）:
+#   cat ~/dockerhub_token.txt | docker login -u ihccccom --password-stdin
+#
+# 如果镜像是公开的（Public），则不需要登录即可拉取
+#
+
+services:
+  nginx:
+    # ================================================================
+    # ⚠️ 请修改为你自己的镜像地址
+    # 格式: <Docker Hub用户名>/nginx:latest
+    # ================================================================
+    image: ihccccom/nginx:latest
+    container_name: nginx
+
+    # 端口映射
+    ports:
+      - "80:80"
+      - "443:443"
+
+    # 数据卷（使用命名卷，首次运行自动从镜像初始化）
+    volumes:
+      - nginx-conf:/opt/nginx/conf            # Nginx 配置文件
+      - nginx-confd:/opt/nginx/conf.d          # 网站配置文件
+      - nginx-ssl:/opt/nginx/ssl               # SSL 证书
+      - nginx-logs:/opt/nginx/logs             # 日志文件
+      - wwwroot:/www/wwwroot                   # 网站根目录
+      - owasp:/opt/owasp                       # OWASP 规则集
+      - nginx-cache:/var/cache/nginx           # Nginx 缓存
+
+    # ============================================================
+    # CIS Docker Benchmark 安全配置
+    # ============================================================
+
+    # CIS 5.25 - 限制容器获取额外权限
+    security_opt:
+      - no-new-privileges:true
+      # 如需启用 Seccomp，取消下行注释：
+      # - seccomp=./security/seccomp/nginx-seccomp.json
+      # 如需启用 AppArmor，取消下行注释（需先在宿主机加载 profile）：
+      # - apparmor=docker-nginx
+
+    # CIS 5.3 - 限制 Linux 内核能力
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE    # 绑定低端口 (80/443)
+      - CHOWN               # 修改文件属主
+      - SETUID              # 切换用户（master→worker）
+      - SETGID              # 切换用户组
+      - DAC_OVERRIDE        # 文件权限覆盖
+
+    # CIS 5.10/5.11 - 资源限制（防止资源耗尽攻击）
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "4.0"
+          pids: 200
+        reservations:
+          memory: 256M
+          cpus: "0.5"
+
+    # CIS 5.12 - 限制容器重启策略
+    restart: unless-stopped
+
+    # CIS 5.12 - 只读根文件系统（最小攻击面）
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,noexec,nosuid,size=8m
+
+    # CIS 5.26 - 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    # 日志配置（防止日志无限增长）
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        tag: "nginx"
+
+    # CIS 5.18 - 限制共享内存
+    shm_size: "256m"
+
+    # 容器主机名
+    hostname: nginx
+
+    # 网络配置
+    networks:
+      - nginx-network
+
+# 命名卷定义
+volumes:
+  nginx-conf:
+    name: nginx-conf
+  nginx-confd:
+    name: nginx-confd
+  nginx-ssl:
+    name: nginx-ssl
+  nginx-logs:
+    name: nginx-logs
+  wwwroot:
+    name: wwwroot
+  owasp:
+    name: owasp
+  nginx-cache:
+    name: nginx-cache
+
+# 网络定义
+networks:
+  nginx-network:
+    name: nginx-network
+    driver: bridge

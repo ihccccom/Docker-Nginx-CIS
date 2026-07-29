@@ -1,0 +1,32 @@
+# Docker 守护进程配置说明 (daemon.json)
+# 此文件为 daemon.json 的中文注释说明，因为 JSON 格式不支持注释
+#
+# log-driver: json-file
+#   日志驱动设置为 json-file 格式，便于日志收集和分析
+#
+# log-opts.max-size: 50m
+#   单个日志文件最大为 50MB，防止日志文件过大占用磁盘空间
+#
+# log-opts.max-file: 5
+#   最多保留 5 个日志文件，实现日志轮转
+#
+# storage-driver: overlay2
+#   使用 overlay2 存储驱动，性能优于旧版 aufs 和 devicemapper
+#
+# live-restore: true
+#   启用实时恢复，守护进程重启时容器继续运行
+#
+# userland-proxy: false
+#   禁用用户态代理，使用 iptables 进行端口转发以提升性能
+#
+# no-new-privileges: true
+#   禁止容器内进程获取新的特权，增强安全性
+#
+# icc: false
+#   禁用容器间通信，容器之间默认不能互相访问，需通过链接或网络明确授权
+#
+# userns-remap: default
+#   启用用户命名空间重映射，容器内 root 映射为宿主机非特权用户
+#
+# log-level: info
+#   日志级别设置为 info，记录常规操作信息用于审计

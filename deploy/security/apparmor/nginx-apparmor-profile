@@ -1,0 +1,64 @@
+#include <tunables/global>
+profile docker-nginx flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # 禁止 shell（保留 sh 仅供 entrypoint 启动后禁用）
+  deny /bin/bash mrwklx,
+  deny /bin/dash mrwklx,
+
+  # 禁止危险操作
+  deny /proc/** w,
+  deny /sys/** w,
+  deny /root/** rwklx,
+  deny mount,
+  deny umount,
+  deny ptrace (trace, read),
+  deny network raw,
+
+  # 网络访问
+  network inet tcp,
+  network inet udp,
+  network inet6 tcp,
+  network inet6 udp,
+  unix (create, listen, accept, connect, send, receive) type=stream,
+
+  # 信号
+  signal (send, receive) peer=docker-nginx,
+  signal (receive) peer=unconfined,
+
+  # 启动脚本和 shell（entrypoint 需要）
+  /bin/sh ix,
+  /docker-entrypoint.sh ix,
+
+  # Nginx 主程序
+  /opt/nginx/sbin/nginx ix,
+
+  # 配置和资源（只读）
+  /opt/nginx/conf/** r,
+  /opt/nginx/conf.d/** r,
+  /opt/nginx/html/** r,
+  /opt/nginx/modules/** r,
+  /etc/ssl/** r,
+  /etc/resolv.conf r,
+  /etc/hosts r,
+  /etc/nsswitch.conf r,
+  /etc/ld.so.cache r,
+  /lib/** r,
+  /lib64/** r,
+  /usr/lib/** r,
+  /www/wwwroot/** r,
+
+  # 读取必要的 proc 信息
+  /proc/sys/kernel/ngroups_max r,
+  /proc/sys/net/** r,
+
+  # 运行时读写
+  /opt/nginx/logs/** rw,
+  /var/cache/nginx/** rw,
+  /var/log/nginx/** rw,
+  /opt/nginx/logs/nginx.pid rw,
+  /run/nginx.pid rw,
+  /dev/null rw,
+  /dev/urandom r,
+  /dev/random r,
+}

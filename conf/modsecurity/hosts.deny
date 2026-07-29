@@ -1,0 +1,13 @@
+# =======================================================
+# ModSecurity IP 黑名单配置
+# 在 phase:1 阶段（Request Headers 处理阶段）执行
+# =======================================================
+#
+# 使用示例:
+#   SecRule REMOTE_ADDR "@ipMatch 192.168.1.110" "id:12001,phase:1,log,auditlog,deny,status:403"
+#   SecRule REMOTE_ADDR "@ipMatch 192.168.1.0/24,10.0.0.0/8" "id:12002,phase:1,log,auditlog,deny,status:403"
+#
+# 拦截空 User-Agent:
+#   SecRule REQUEST_HEADERS:User-Agent "^$" "id:12003,phase:1,t:none,deny,nolog,noauditlog"
+#   SecRule &REQUEST_HEADERS:User-Agent "@eq 0" "id:12005,phase:1,t:none,deny,nolog,noauditlog"
+#

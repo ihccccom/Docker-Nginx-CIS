@@ -1,0 +1,14 @@
+# =======================================================
+# ModSecurity IP 白名单配置
+# 在 phase:1 阶段（Request Headers 处理阶段）执行
+# 白名单 IP 将跳过所有 ModSecurity 规则检查
+# =======================================================
+#
+# 使用示例:
+#   SecRule REMOTE_ADDR "@ipMatch 192.168.1.110" "id:11001,phase:1,nolog,pass,ctl:ruleEngine=off"
+#   SecRule REMOTE_ADDR "@ipMatch 10.0.0.0/8,172.16.0.0/12" "id:11002,phase:1,nolog,pass,ctl:ruleEngine=off"
+#
+# 文件/路径白名单（phase:2）:
+#   SecRule REQUEST_FILENAME "^/index.html$" "id:11003,phase:2,nolog,pass,ctl:ruleEngine=off"
+#   SecRule REQUEST_URI "^/api/" "id:11004,phase:2,nolog,pass,ctl:ruleEngine=off"
+#
