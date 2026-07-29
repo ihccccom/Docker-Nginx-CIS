@@ -654,7 +654,7 @@ docker build --build-arg NGINX_VERSION=1.28.2 -t nginx:latest ./nginx/
 
 ## 许可证
 
-本项目遵循 [MIT License](../LICENSE)。
+本项目遵循 [BSD 3-Clause License](LICENSE)
 
 ---
 
