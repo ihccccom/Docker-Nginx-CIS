@@ -93,7 +93,7 @@ jobs:
       # 1. 签出代码
       # ==========================================
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ==========================================
       # 2. 从 Dockerfile 提取版本号（动态获取，避免硬编码）
@@ -116,13 +116,13 @@ jobs:
       # 3. 设置 Docker Buildx（支持多架构构建）
       # ==========================================
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # ==========================================
       # 4. 登录 Docker Hub
       # ==========================================
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -132,7 +132,7 @@ jobs:
       # ==========================================
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
@@ -150,7 +150,7 @@ jobs:
       # ==========================================
       - name: Build and Push Docker image
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./nginx
           file: ./nginx/Dockerfile
@@ -176,7 +176,7 @@ jobs:
           echo "${{ steps.build.outputs.digest }}" > /tmp/digests/amd64
 
       - name: Upload AMD64 digest artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: digest-amd64
           path: /tmp/digests/amd64
@@ -198,7 +198,7 @@ jobs:
       # 1. 签出代码
       # ==========================================
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ==========================================
       # 2. 从 Dockerfile 提取版本号（动态获取，避免硬编码）
@@ -221,13 +221,13 @@ jobs:
       # 3. 设置 Docker Buildx（支持多架构构建）
       # ==========================================
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # ==========================================
       # 4. 登录 Docker Hub
       # ==========================================
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -237,7 +237,7 @@ jobs:
       # ==========================================
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
@@ -255,7 +255,7 @@ jobs:
       # ==========================================
       - name: Build and Push Docker image
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./nginx
           file: ./nginx/Dockerfile
@@ -281,7 +281,7 @@ jobs:
           echo "${{ steps.build.outputs.digest }}" > /tmp/digests/arm64
 
       - name: Upload ARM64 digest artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: digest-arm64
           path: /tmp/digests/arm64
@@ -304,7 +304,7 @@ jobs:
       # 1. 签出代码
       # ==========================================
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ==========================================
       # 2. 从 Dockerfile 提取版本号
@@ -327,7 +327,7 @@ jobs:
       # 3. 下载所有平台的 digest
       # ==========================================
       - name: Download digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: /tmp/digests
           pattern: digest-*
@@ -337,13 +337,13 @@ jobs:
       # 4. 设置 Docker Buildx
       # ==========================================
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # ==========================================
       # 5. 登录 Docker Hub
       # ==========================================
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -353,7 +353,7 @@ jobs:
       # ==========================================
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
