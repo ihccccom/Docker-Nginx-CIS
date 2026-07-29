@@ -43,6 +43,10 @@
       "groupName": "第三方 Nginx 模块"
     },
     {
+      "matchPackageNames": ["ZihaoFU245/ngx_http_tunnel_module"],
+      "ignoreVersions": ["^1\\.18$"]
+    },
+    {
       "matchPackageNames": [
         "SpiderLabs/ModSecurity",
         "owasp-modsecurity/ModSecurity-nginx",
