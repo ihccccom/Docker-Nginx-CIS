@@ -354,7 +354,7 @@ RUN set -eux; \
       git submodule init; \
       git submodule update; \
       ./build.sh; \
-      ./configure --with-pcre2; \
+      ./configure --with-yajl --with-ssdeep --with-lmdb --with-pcre2 --with-maxmind --enable-silent-rules; \
       make -j$(nproc) || make; \
       make install; \
     fi
