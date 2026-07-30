@@ -110,7 +110,7 @@ ARG NGINX_VERSION_NUMBER="8.2.6"
 # Stage 1: 编译阶段 (Build Stage)
 # 使用完整 Debian 进行编译，最终镜像只保留运行时文件
 # =======================================================
-FROM debian:bookworm-slim AS builder
+FROM debian:trixie-slim AS builder
 
 # hadolint ignore=DL4006
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -446,7 +446,7 @@ RUN set -eux; \
 # Stage 2: 运行阶段 (Runtime Stage)
 # CIS Docker Benchmark 合规 - 最小化镜像
 # =======================================================
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # hadolint ignore=DL4006
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
