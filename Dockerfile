@@ -342,6 +342,11 @@ RUN set -eux; \
       rm -f "ngx-fancyindex-${FANCYINDEX_VERSION}.tar.xz"; \
     fi
 
+RUN set -eux; \
+    git clone https://github.com/LMDB/lmdb --branch LMDB_${LMDB_VERSION} --depth 1; \
+    make -C lmdb/libraries/liblmdb install; \
+    strip /usr/local/lib/liblmdb*.so*
+
 # 编译安装 ModSecurity WAF 引擎
 RUN set -eux; \
     if [ "${USE_modsecurity}" = "true" ]; then \
