@@ -476,7 +476,6 @@ RUN groupadd -r www-data 2>/dev/null || true \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libjemalloc2 \
-    doxygen \
     libgd3 \
     libfuzzy2 \
     libgeoip1 \
@@ -484,7 +483,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libbrotli1 \
     libpcre2-8-0 \
     libmaxminddb0 \
-    libcurl4-openssl-dev \
     liblmdb0 \
     libyajl2 \
     libxml2 \
@@ -493,9 +491,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g \
     openssl \
     curl \
-    libmaxminddb-dev \
-    ed \
-    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/*
     && apt-get clean
 
 # CIS Docker 4.8 - 移除不必要的 setuid/setgid 权限
