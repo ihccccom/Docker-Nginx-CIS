@@ -148,9 +148,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-utils \
     build-essential \
-    doxygen \
-    libfuzzy-dev \
-    ruby \
     libssl-dev \
     zlib1g-dev \
     libaio-dev \
@@ -159,7 +156,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgeoip-dev \
     libxslt1-dev \
     libbrotli-dev \
-    libcurl4-gnutls-dev \
+    libcurl4-openssl-dev \
     libyaml-dev \
     unzip \
     git \
@@ -170,7 +167,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     pkg-config \
     libpcre2-dev \
+    libpcre2-8-0 \
     liblua5.3-dev \
+    libmaxminddb0 \
     libmaxminddb-dev \
     liblmdb-dev \
     libtool \
@@ -352,7 +351,7 @@ RUN set -eux; \
       git submodule init; \
       git submodule update; \
       ./build.sh; \
-      ./configure --with-yajl --with-lmdb --with-pcre2 --with-maxmind --enable-silent-rules; \
+      ./configure --with-pcre2; \
       make -j$(nproc) || make; \
       make install; \
     fi
@@ -477,13 +476,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libjemalloc2 \
     libgd3 \
-    libfuzzy2 \
     libgeoip1 \
     libxslt1.1 \
     libbrotli1 \
     libpcre2-8-0 \
-    libmaxminddb-dev \
-    libcurl4-gnutls-dev \
+    libmaxminddb0 \
     liblmdb0 \
     libyajl2 \
     libxml2 \
