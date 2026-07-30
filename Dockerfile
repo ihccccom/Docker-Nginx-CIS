@@ -33,9 +33,6 @@ ARG USE_ngx_cache_purge=true
 # ngx_http_headers_more_filter_module 自定义响应头模块
 ARG USE_ngx_http_headers_more_filter_module=true
 
-# ngx_http_tunnel_module 正向代理 CONNECT 模块
-ARG USE_ngx_http_tunnel_module=true
-
 # ngx_brotli 压缩模块
 ARG USE_ngx_brotli=true
 
@@ -123,7 +120,6 @@ ARG USE_ngx_fancyindex
 ARG USE_PCRE2
 ARG USE_ngx_cache_purge
 ARG USE_ngx_http_headers_more_filter_module
-ARG USE_ngx_http_tunnel_module
 ARG USE_ngx_brotli
 ARG USE_openssl
 ARG USE_modsecurity
@@ -389,8 +385,6 @@ RUN set -eux; \
       EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ngx_brotli" || true; \
     [ "${USE_ngx_http_headers_more_filter_module}" = "true" ] && \
       EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/headers-more-nginx-module" || true; \
-    [ "${USE_ngx_http_tunnel_module}" = "true" ] && \
-      EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ngx_http_tunnel_module" || true; \
     [ "${USE_modsecurity_nginx}" = "true" ] && \
       EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ModSecurity-nginx" || true; \
     [ "${USE_openssl}" = "true" ] && \
