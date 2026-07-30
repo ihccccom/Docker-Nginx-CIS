@@ -148,6 +148,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-utils \
     build-essential \
+    libfuzzy-dev \
+    doxygen \
+    ruby \
     libssl-dev \
     zlib1g-dev \
     libaio-dev \
@@ -480,7 +483,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1.1 \
     libbrotli1 \
     libpcre2-8-0 \
-    libmaxminddb0 \
+    libfuzzy2 \
+    libmaxminddb-dev \
     liblmdb0 \
     libyajl2 \
     libxml2 \
