@@ -36,8 +36,7 @@
         "PhilipHazel/pcre2",
         "aperezdc/ngx-fancyindex",
         "FRiCKLE/ngx_cache_purge",
-        "openresty/headers-more-nginx-module",
-        "google/ngx_brotli"
+        "openresty/headers-more-nginx-module"
       ],
       "groupName": "第三方 Nginx 模块"
     },
