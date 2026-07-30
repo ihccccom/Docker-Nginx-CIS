@@ -356,11 +356,10 @@ RUN set -eux; \
     if [ "${USE_modsecurity}" = "true" ]; then \
       cd ${NGINX_SRC_DIR}; \
       git clone --depth 1 --recursive -b "${MODSECURITY_VERSION}" --single-branch \
-        https://github.com/SpiderLabs/ModSecurity ModSecurity; \
+        https://github.com/owasp-modsecurity/ModSecurity ModSecurity; \
       cd ModSecurity; \
-      git submodule update --recursive; \
-      git submodule init; \
-      git submodule update; \
+      ARCH=$(gcc -print-multiarch); \
+      sed -ie "s/i386-linux-gnu/${ARCH}/g" build/msc_find_lib.m4; \
       ./build.sh; \
       ./configure --with-yajl --with-ssdeep --with-lmdb --with-pcre2 --with-maxmind --enable-silent-rules; \
       make -j$(nproc) || make; \
