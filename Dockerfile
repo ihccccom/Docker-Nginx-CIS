@@ -489,7 +489,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libbrotli1 \
     libpcre2-8-0 \
     libmaxminddb-dev \
-    libcurl4-gnutls-dev
+    libcurl4-gnutls-dev \
     liblmdb0 \
     libyajl2 \
     libxml2 \
