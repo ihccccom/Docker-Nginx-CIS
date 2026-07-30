@@ -148,6 +148,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-utils \
     build-essential \
+    doxygen \
+    libfuzzy-dev \
     libssl-dev \
     zlib1g-dev \
     libaio-dev \
@@ -351,7 +353,7 @@ RUN set -eux; \
       git submodule init; \
       git submodule update; \
       ./build.sh; \
-      ./configure --with-pcre2; \
+      ./configure --with-yajl --with-ssdeep --with-lmdb --with-pcre2 --with-maxmind --enable-silent-rules; \
       make -j$(nproc) || make; \
       make install; \
     fi
@@ -475,6 +477,7 @@ RUN groupadd -r www-data 2>/dev/null || true \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libjemalloc2 \
+    doxygen \
     libgd3 \
     libgeoip1 \
     libxslt1.1 \
