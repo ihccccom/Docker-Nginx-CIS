@@ -37,15 +37,9 @@
         "aperezdc/ngx-fancyindex",
         "FRiCKLE/ngx_cache_purge",
         "openresty/headers-more-nginx-module",
-        "ZihaoFU245/ngx_http_tunnel_module",
         "google/ngx_brotli"
       ],
       "groupName": "第三方 Nginx 模块"
-    },
-    {
-      "matchPackageNames": ["ZihaoFU245/ngx_http_tunnel_module"],
-      "description": "过滤不规范的TAG，只允许符合规范的版本",
-      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/"
     },
     {
       "matchPackageNames": [
@@ -69,7 +63,7 @@
     {
       "matchFileNames": ["Dockerfile"],
       "prBodyNotes": [
-        "⚠️ 该版本号在 Dockerfile 中被源码编译使用，合并前请触发一次完整构建（含 `docker build`），并确认 `ngx_http_tunnel_module` 的 `header_parsing.patch` 与 `upstream.patch` 仍可成功应用到当前 nginx 版本。"
+        "⚠️ 该版本号在 Dockerfile 中被源码编译使用，合并前请触发一次完整构建（含 `docker build`）"
       ]
     }
   ],
@@ -126,17 +120,6 @@
       "depNameTemplate": "openresty/headers-more-nginx-module",
       "datasourceTemplate": "github-tags",
       "extractVersionTemplate": "^v(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
-      "description": "ngx_http_tunnel_module 版本（Dockerfile 保存纯版本号，GitHub Tag 为 release-x.y.z）",
-      "fileMatch": ["^Dockerfile$"],
-      "matchStrings": [
-      "ARG TUNNEL_MODULE_VERSION=\"(?<currentValue>[\\d.]+)\""
-    ],
-      "depNameTemplate": "ZihaoFU245/ngx_http_tunnel_module",
-      "datasourceTemplate": "github-tags",
-      "extractVersionTemplate": "^release-(?<version>.*)$"
     },
     {
       "customType": "regex",
