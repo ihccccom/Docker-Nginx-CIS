@@ -160,7 +160,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1-dev \
     libbrotli-dev \
     libcurl4-gnutls-dev \
-    ssdeep \
     libyaml-dev \
     unzip \
     git \
@@ -342,11 +341,6 @@ RUN set -eux; \
       rm -f "ngx-fancyindex-${FANCYINDEX_VERSION}.tar.xz"; \
     fi
 
-RUN set -eux; \
-    git clone https://github.com/LMDB/lmdb --branch LMDB_0.9.29 --depth 1; \
-    make -C lmdb/libraries/liblmdb install; \
-    strip /usr/local/lib/liblmdb*.so*
-
 # 编译安装 ModSecurity WAF 引擎
 RUN set -eux; \
     if [ "${USE_modsecurity}" = "true" ]; then \
@@ -358,7 +352,7 @@ RUN set -eux; \
       git submodule init; \
       git submodule update; \
       ./build.sh; \
-      ./configure --with-yajl --with-ssdeep --with-lmdb --with-pcre2 --with-maxmind --enable-silent-rules; \
+      ./configure --with-yajl --with-lmdb --with-pcre2 --with-maxmind --enable-silent-rules; \
       make -j$(nproc) || make; \
       make install; \
     fi
