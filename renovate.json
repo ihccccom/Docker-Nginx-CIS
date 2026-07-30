@@ -43,7 +43,7 @@
     },
     {
       "matchPackageNames": [
-        "SpiderLabs/ModSecurity",
+        "owasp-modsecurity/ModSecurity",
         "owasp-modsecurity/ModSecurity-nginx",
         "coreruleset/coreruleset"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "matchPackageNames": [
-        "SpiderLabs/ModSecurity",
+        "owasp-modsecurity/ModSecurity",
         "owasp-modsecurity/ModSecurity-nginx",
         "coreruleset/coreruleset"
       ],
@@ -142,7 +142,7 @@
       "description": "ModSecurity 核心引擎版本 (ARG 值本身带 v 前缀)",
       "fileMatch": ["^Dockerfile$"],
       "matchStrings": ["ARG MODSECURITY_VERSION=\"(?<currentValue>v[\\d.]+)\""],
-      "depNameTemplate": "SpiderLabs/ModSecurity",
+      "depNameTemplate": "owasp-modsecurity/ModSecurity",
       "datasourceTemplate": "github-tags"
     }
   ],
