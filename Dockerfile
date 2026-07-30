@@ -160,6 +160,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1-dev \
     libbrotli-dev \
     libcurl4-openssl-dev \
+    ssdeep \
     libyaml-dev \
     unzip \
     git \
