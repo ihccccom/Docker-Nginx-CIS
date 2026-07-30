@@ -478,11 +478,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjemalloc2 \
     libgd3 \
     libgeoip1 \
-    libxslt1.1 \
     libbrotli1 \
     libpcre2-8-0 \
     libfuzzy2 \
-    libmaxminddb-dev \
+    libmaxminddb0 \
     liblmdb0 \
     libyajl2 \
     libxml2 \
