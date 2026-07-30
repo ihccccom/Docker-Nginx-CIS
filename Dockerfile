@@ -478,11 +478,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjemalloc2 \
     doxygen \
     libgd3 \
+    libfuzzy2 \
     libgeoip1 \
     libxslt1.1 \
     libbrotli1 \
     libpcre2-8-0 \
     libmaxminddb0 \
+    libcurl4-openssl-dev \
     liblmdb0 \
     libyajl2 \
     libxml2 \
@@ -491,6 +493,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g \
     openssl \
     curl \
+    libmaxminddb-dev \
+    ed \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
