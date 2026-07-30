@@ -19,8 +19,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'Dockerfile'
-      - 'nginx.conf'   # 如果您有其他相关配置文件，可按需添加
+      #- 'Dockerfile'
+      #- 'nginx.conf'   # 如果您有其他相关配置文件，可按需添加
       - '.github/workflows/docker-build-push.yml'
     tags:
       - 'v*.*.*'
