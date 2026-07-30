@@ -92,11 +92,14 @@ ARG MODSECURITY_VERSION="v3.0.16"
 
 ###############################################
 # 自定义模块入口 (Extra Nginx Modules)
-# 可添加额外的 --add-module 或 --add-dynamic-module 参数
-# 多个模块用空格分隔
-# 示例: "--add-module=/path/to/module1 --add-module=/path/to/module2"
+# 1. EXTRA_NGINX_MODULES: 可添加额外的 --add-module 或 --add-dynamic-module 参数
+# 2. EXTRA_GITHUB_MODULES: 可通过 GitHub 动态下载并编译模块，格式: "作者/仓库名/分支或标签" (多个用空格隔开)
+# 填写示例:
+#   ARG EXTRA_NGINX_MODULES="--add-module=/opt/nginx/src/my-custom-module"
+#   ARG EXTRA_GITHUB_MODULES="chobits/ngx_http_proxy_connect_module/v0.0.5 simplified/ngx_devel_kit/master"
 ###############################################
 ARG EXTRA_NGINX_MODULES=""
+ARG EXTRA_GITHUB_MODULES=""
 
 ###############################################
 # Nginx 伪装配置 (Server Identity)
@@ -303,37 +306,35 @@ RUN set -eux; \
       rm -f "v${version}.tar.gz"; \
     fi
 
-# 下载 ngx_http_tunnel_module 正向代理模块并应用补丁
+# 通用 GitHub 第三方模块动态下载逻辑（支持通过 EXTRA_GITHUB_MODULES 传入并下载）
 RUN set -eux; \
-    if [ "${USE_ngx_http_tunnel_module}" = "true" ]; then \
+    if [ -n "${EXTRA_GITHUB_MODULES}" ]; then \
       cd ${NGINX_SRC_DIR}; \
-      if [ -n "${TUNNEL_MODULE_VERSION}" ]; then \
-        http_tunnel_version="${TUNNEL_MODULE_VERSION}"; \
-      else \
-        http_tunnel_version=$(curl -s --retry 5 --retry-delay 2 --retry-connrefused \
-          "https://api.github.com/repos/ZihaoFU245/ngx_http_tunnel_module/tags" \
-          | grep -o '"name": "[^"]*' | head -n 1 | cut -d '"' -f 4) || true; \
-        if [ -z "$http_tunnel_version" ]; then echo "错误：无法获取 ngx_http_tunnel_module 版本"; exit 1; fi; \
-      fi; \
-      \
-      # 归一化处理：加上统一前缀，防止变量污染
-      http_tunnel_clean_ver="${http_tunnel_version#release-}" ; \
-      http_tunnel_tag_name="release-${http_tunnel_clean_ver}" ; \
-      \
-      wget --tries=5 --waitretry=2 \
-        "https://github.com/ZihaoFU245/ngx_http_tunnel_module/archive/refs/tags/${http_tunnel_tag_name}.zip" \
-        -O "${http_tunnel_tag_name}.zip"; \
-      unzip "${http_tunnel_tag_name}.zip"; \
-      rm -f "${http_tunnel_tag_name}.zip"; \
-      mv "ngx_http_tunnel_module-${http_tunnel_tag_name}" ngx_http_tunnel_module; \
-      \
-      cd ${NGINX_DIR}/nginx; \
-      cp ${NGINX_SRC_DIR}/ngx_http_tunnel_module/patches/header_parsing.patch .; \
-      cp ${NGINX_SRC_DIR}/ngx_http_tunnel_module/patches/upstream.patch .; \
-      git apply header_parsing.patch; \
-      git apply upstream.patch; \
-      rm -f header_parsing.patch; \
-      rm -f upstream.patch; \
+      for mod_item in ${EXTRA_GITHUB_MODULES}; do \
+        repo_owner=$(echo "${mod_item}" | cut -d'/' -f1); \
+        repo_name=$(echo "${mod_item}" | cut -d'/' -f2); \
+        repo_tag=$(echo "${mod_item}" | cut -d'/' -f3); \
+        \
+        if [ -z "${repo_tag}" ]; then \
+          repo_tag="main"; \
+        fi; \
+        \
+        echo "正在下载第三方模块: ${repo_owner}/${repo_name} (${repo_tag})..."; \
+        wget --tries=5 --waitretry=2 \
+          "https://github.com/${repo_owner}/${repo_name}/archive/refs/tags/${repo_tag}.zip" \
+          -O "${repo_name}-${repo_tag}.zip" || \
+        wget --tries=5 --waitretry=2 \
+          "https://github.com/${repo_owner}/${repo_name}/archive/refs/heads/${repo_tag}.zip" \
+          -O "${repo_name}-${repo_tag}.zip"; \
+        \
+        unzip "${repo_name}-${repo_tag}.zip"; \
+        rm -f "${repo_name}-${repo_tag}.zip"; \
+        \
+        unzipped_dir=$(ls -d ${repo_name}-* | grep -v '\.zip$' | head -n 1); \
+        if [ -d "${unzipped_dir}" ] && [ "${unzipped_dir}" != "${repo_name}" ]; then \
+          mv "${unzipped_dir}" "${repo_name}"; \
+        fi; \
+      done; \
     fi
 
 # 下载 ngx_fancyindex 美化目录浏览模块
@@ -402,9 +403,21 @@ RUN set -eux; \
       EXTRA_ARGS="$EXTRA_ARGS --with-pcre=${NGINX_SRC_DIR}/pcre2" || true; \
     [ "${USE_ngx_fancyindex}" = "true" ] && \
       EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ngx_fancyindex" || true; \
+    \
+    # 动态把通过 EXTRA_GITHUB_MODULES 下载的模块追加到编译参数中
+    if [ -n "${EXTRA_GITHUB_MODULES}" ]; then \
+      for mod_item in ${EXTRA_GITHUB_MODULES}; do \
+        repo_name=$(echo "${mod_item}" | cut -d'/' -f2); \
+        if [ -d "${NGINX_SRC_DIR}/${repo_name}" ]; then \
+          EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/${repo_name}"; \
+        fi; \
+      done; \
+    fi; \
+    \
     if [ -n "${EXTRA_NGINX_MODULES}" ]; then \
       EXTRA_ARGS="$EXTRA_ARGS ${EXTRA_NGINX_MODULES}"; \
     fi; \
+    \
     ./configure \
       --prefix=${NGINX_DIR} \
       --user=www-data \
@@ -448,7 +461,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # OCI 镜像标签（用于 Docker Hub 展示）
 LABEL org.opencontainers.image.title="Nginx" \
       org.opencontainers.image.description="Security-hardened Nginx with ModSecurity WAF, CIS Benchmark compliant" \
-      org.opencontainers.image.source="https://github.com/mzwrt/copilot" \
+      org.opencontainers.image.source="https://github.com/ihccccom/Docker-Nginx-CIS" \
       org.opencontainers.image.licenses="MIT"
 
 # 重新声明运行时需要的 ARGs
