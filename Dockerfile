@@ -353,7 +353,7 @@ RUN set -eux; \
       ./build.sh; \
       ./configure --with-yajl --with-ssdeep --with-lmdb --with-pcre2 --with-maxmind --enable-silent-rules; \
       make -j$(nproc) install; \
-      strip /usr/local/modsecurity/lib/lib*.so*
+      strip /usr/local/modsecurity/lib/lib*.so*; \
     fi
 
 # 下载 ModSecurity-nginx 连接器
