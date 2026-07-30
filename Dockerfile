@@ -159,7 +159,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgeoip-dev \
     libxslt1-dev \
     libbrotli-dev \
-    libcurl4-openssl-dev \
+    libcurl4-gnutls-dev \
     ssdeep \
     libyaml-dev \
     unzip \
@@ -484,6 +484,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libbrotli1 \
     libpcre2-8-0 \
     libmaxminddb-dev \
+    libcurl4-gnutls-dev
     liblmdb0 \
     libyajl2 \
     libxml2 \
