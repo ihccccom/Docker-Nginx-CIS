@@ -350,13 +350,10 @@ RUN set -eux; \
       git clone --depth 1 --recursive -b "${MODSECURITY_VERSION}" --single-branch \
         https://github.com/SpiderLabs/ModSecurity ModSecurity; \
       cd ModSecurity; \
-      git submodule update --recursive; \
-      git submodule init; \
-      git submodule update; \
       ./build.sh; \
-      ./configure --with-pcre2; \
-      make -j$(nproc) || make; \
-      make install; \
+      ./configure --with-yajl --with-ssdeep --with-lmdb --with-pcre2 --with-maxmind --enable-silent-rules; \
+      make -j$(nproc) install; \
+      strip /usr/local/modsecurity/lib/lib*.so*
     fi
 
 # 下载 ModSecurity-nginx 连接器
