@@ -343,6 +343,14 @@ RUN set -eux; \
       rm -f "ngx-fancyindex-${FANCYINDEX_VERSION}.tar.xz"; \
     fi
 
+RUN pkg-config --modversion libfuzzy || true && \
+    pkg-config --cflags libfuzzy || true && \
+    pkg-config --libs libfuzzy || true
+
+RUN find /usr -name "*.pc" | grep -i fuzzy || true
+
+
+
 # 编译安装 ModSecurity WAF 引擎
 RUN set -eux; \
     if [ "${USE_modsecurity}" = "true" ]; then \
