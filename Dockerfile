@@ -343,7 +343,7 @@ RUN set -eux; \
     fi
 
 RUN set -eux; \
-    git clone https://github.com/LMDB/lmdb --branch LMDB_${LMDB_VERSION} --depth 1; \
+    git clone https://github.com/LMDB/lmdb --branch LMDB_0.9.29 --depth 1; \
     make -C lmdb/libraries/liblmdb install; \
     strip /usr/local/lib/liblmdb*.so*
 
