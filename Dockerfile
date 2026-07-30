@@ -150,6 +150,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     doxygen \
     libfuzzy-dev \
+    ruby \
     libssl-dev \
     zlib1g-dev \
     libaio-dev \
@@ -169,9 +170,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     pkg-config \
     libpcre2-dev \
-    libpcre2-8-0 \
     liblua5.3-dev \
-    libmaxminddb0 \
     libmaxminddb-dev \
     liblmdb-dev \
     libtool \
