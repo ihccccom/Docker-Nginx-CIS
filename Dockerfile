@@ -482,7 +482,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1.1 \
     libbrotli1 \
     libpcre2-8-0 \
-    libmaxminddb0 \
+    libmaxminddb-dev \
     liblmdb0 \
     libyajl2 \
     libxml2 \
@@ -491,7 +491,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g \
     openssl \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
 # CIS Docker 4.8 - 移除不必要的 setuid/setgid 权限
