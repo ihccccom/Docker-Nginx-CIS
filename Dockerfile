@@ -445,7 +445,11 @@ RUN set -eux; \
       --with-ld-opt='-ljemalloc -flto=auto -fPIE -fPIC -pie -Wl,-z,relro,-z,now -Wl,-O2 -Wl,--as-needed' \
       $EXTRA_ARGS; \
     make -j$(nproc); \
-    make install
+    make install; \
+    strip /opt/nginx/sbin/nginx; \
+    if ls /opt/nginx/modules/*.so 1>/dev/null 2>&1; then \
+      strip /opt/nginx/modules/*.so; \
+    fi
 
 
 # =======================================================
