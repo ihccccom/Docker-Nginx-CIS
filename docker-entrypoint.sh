@@ -8,25 +8,54 @@ set -e
 
 NGINX_DIR="/opt/nginx"
 
-# 确保日志目录存在且可写
-mkdir -p ${NGINX_DIR}/logs 2>/dev/null || true
-mkdir -p ${NGINX_DIR}/logs/modsec_audit 2>/dev/null || true
-touch ${NGINX_DIR}/logs/nginx.pid 2>/dev/null || true
+# 1. 修复主配置与子目录权限
+find ${NGINX_DIR}/conf -type d -exec chmod 700 {} \;
+find ${NGINX_DIR}/conf -type f -exec chmod 600 {} \;
+find ${NGINX_DIR}/conf.d -type d -exec chmod 700 {} \;
+find ${NGINX_DIR}/conf.d -type f -exec chmod 600 {} \;
 
-# 确保缓存目录存在且权限正确
+# 2. 修复 SSL 证书及密钥权限
+[ -d "${NGINX_DIR}/ssl" ] && chmod 700 ${NGINX_DIR}/ssl
+[ -d "${NGINX_DIR}/ssl/default" ] && chmod 700 ${NGINX_DIR}/ssl/default
+find ${NGINX_DIR}/ssl -type f -name "*.key" -exec chmod 400 {} \;
+find ${NGINX_DIR}/ssl -type f -name "*.pem" -exec chmod 600 {} \;
+[ -f "${NGINX_DIR}/ssl/dhparam.pem" ] && chmod 600 ${NGINX_DIR}/ssl/dhparam.pem
+
+# 3. 修复 ModSecurity 规则与日志权限
+mkdir -p ${NGINX_DIR}/logs/modsec_audit
+find ${NGINX_DIR}/conf/modsecurity -type d -exec chmod 700 {} \;
+find ${NGINX_DIR}/conf/modsecurity -type f -name "*.conf" -exec chmod 600 {} \;
+chown -R root:root ${NGINX_DIR}/conf/modsecurity 
+chown -R www-data:www-data ${NGINX_DIR}/logs/modsec_audit
+
+
+# 4. 修复日志与缓存目录权限
+mkdir -p ${NGINX_DIR}/logs
+touch ${NGINX_DIR}/logs/nginx.pid
+
+chmod 750 ${NGINX_DIR}/logs
+chown -R root:www-data ${NGINX_DIR}/logs
+touch ${NGINX_DIR}/logs/nginx.pid && chmod u-x,go-wx ${NGINX_DIR}/logs/nginx.pid
+chown -R www-data:www-data /var/cache/nginx
+
+# 5. 修复网站根目录权限
+mkdir -p /www/wwwroot/html
+chown -R www-data:www-data /www/wwwroot/html
+chmod 755 /www/wwwroot/html
+find /www/wwwroot/html -type f -exec chmod 444 {} \;
+
+
+# 6. 确保缓存目录存在且权限正确
 # 注意：容器以 root 运行（nginx master 需要 root 绑定端口），workers 以 www-data 运行
 for dir in client_temp proxy_temp proxy_cache fastcgi_temp uwsgi_temp scgi_temp; do
     mkdir -p /var/cache/nginx/${dir} 2>/dev/null || true
-    chown www-data:www-data /var/cache/nginx/${dir} 2>/dev/null || true
+    chown www-data:www-data /var/cache/nginx/${dir}
 done
 
-# 确保网站目录存在
-mkdir -p /www/wwwroot/html 2>/dev/null || true
-
-# Nginx 配置测试
-if [ "$1" = "/opt/nginx/sbin/nginx" ] || [ "$1" = "nginx" ]; then
+# 7. Nginx 配置测试
+if [ "$1" = "${NGINX_DIR}/sbin/nginx" ] || [ "$1" = "nginx" ]; then
     echo "正在验证 Nginx 配置..."
-    if ! /opt/nginx/sbin/nginx -t 2>&1; then
+    if ! ${NGINX_DIR}/sbin/nginx -t 2>&1; then
         echo "错误: Nginx 配置验证未通过，请检查配置文件" >&2
         exit 1
     fi
