@@ -219,12 +219,12 @@ RUN set -eux; \
         ${NGINX_DIR}/nginx/src/http/ngx_http_special_response.c; \
       sed -i "s/<hr><center>\" NGINX_VER \"<\/center>\" CRLF/<hr><center>${safe_name}<\/center>\" CRLF/" \
         ${NGINX_DIR}/nginx/src/http/ngx_http_special_response.c; \
-    fi; \
-    if [ -n "${NGINX_VERSION_NUMBER}" ]; then \
-      safe_version=$(printf '%s' "${NGINX_VERSION_NUMBER}" | sed 's/[&/\\]/\\&/g'); \
-      sed -i "s/#define NGINX_VERSION.*\".*\"/#define NGINX_VERSION      \"${safe_version}\"/" \
-        ${NGINX_DIR}/nginx/src/core/nginx.h; \
     fi
+#    if [ -n "${NGINX_VERSION_NUMBER}" ]; then \
+#      safe_version=$(printf '%s' "${NGINX_VERSION_NUMBER}" | sed 's/[&/\\]/\\&/g'); \
+#      sed -i "s/#define NGINX_VERSION.*\".*\"/#define NGINX_VERSION     \"${safe_version}\"/" \
+#        ${NGINX_DIR}/nginx/src/core/nginx.h; \
+#    fi; \
 
 # 下载 PCRE2 模块
 RUN set -eux; \
