@@ -511,16 +511,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; 2>/dev/null || true
 
 # 从编译阶段复制 Nginx 二进制文件和默认页面
-COPY --from=builder /opt/nginx/sbin /opt/nginx/sbin
-COPY --from=builder /opt/nginx/html /opt/nginx/html
-COPY --from=builder /opt/nginx/modules /opt/nginx/modules
+COPY --from=builder /opt/nginx/sbin ${NGINX_DIR}/sbin
+COPY --from=builder /opt/nginx/html ${NGINX_DIR}/html
+COPY --from=builder /opt/nginx/modules ${NGINX_DIR}/modules
 
 # 从编译阶段复制 Nginx 自带配置文件（mime.types、fastcgi 相关等）
-COPY --from=builder /opt/nginx/conf/mime.types /opt/nginx/conf/mime.types
-COPY --from=builder /opt/nginx/conf/fastcgi.conf /opt/nginx/conf/fastcgi.conf
-COPY --from=builder /opt/nginx/conf/fastcgi_params /opt/nginx/conf/fastcgi_params
-COPY --from=builder /opt/nginx/conf/uwsgi_params /opt/nginx/conf/uwsgi_params
-COPY --from=builder /opt/nginx/conf/scgi_params /opt/nginx/conf/scgi_params
+COPY --from=builder /opt/nginx/conf/mime.types ${NGINX_DIR}/conf/mime.types
+COPY --from=builder /opt/nginx/conf/fastcgi.conf ${NGINX_DIR}/conf/fastcgi.conf
+COPY --from=builder /opt/nginx/conf/fastcgi_params ${NGINX_DIR}/conf/fastcgi_params
+COPY --from=builder /opt/nginx/conf/uwsgi_params ${NGINX_DIR}/conf/uwsgi_params
+COPY --from=builder /opt/nginx/conf/scgi_params ${NGINX_DIR}/conf/scgi_params
 
 # 从编译阶段复制 ModSecurity 库文件
 COPY --from=builder /usr/local/modsecurity /usr/local/modsecurity
