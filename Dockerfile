@@ -458,7 +458,7 @@ RUN set -eux; \
 # Stage 2: 运行阶段 (Runtime Stage)
 # CIS Docker Benchmark 合规 - 最小化镜像
 # =======================================================
-FROM debian:trixie-slim
+FROM debian:trixie-slim AS final
 
 # hadolint ignore=DL4006
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
