@@ -219,13 +219,12 @@ RUN set -eux; \
         ${NGINX_DIR}/nginx/src/http/ngx_http_special_response.c; \
       sed -i "s/<hr><center>\" NGINX_VER \"<\/center>\" CRLF/<hr><center>${safe_name}<\/center>\" CRLF/" \
         ${NGINX_DIR}/nginx/src/http/ngx_http_special_response.c; \
+    fi; \
+    if [ -n "${NGINX_VERSION_NUMBER}" ]; then \
+      safe_version=$(printf '%s' "${NGINX_VERSION_NUMBER}" | sed 's/[&/\\]/\\&/g'); \
+      sed -i "s/#define NGINX_VERSION.*\".*\"/#define NGINX_VERSION      \"${safe_version}\"/" \
+        ${NGINX_DIR}/nginx/src/core/nginx.h; \
     fi
-#   这个是影响 nginx -v 或 nginx -V 时，显示的 注释掉
-#    if [ -n "${NGINX_VERSION_NUMBER}" ]; then \
-#      safe_version=$(printf '%s' "${NGINX_VERSION_NUMBER}" | sed 's/[&/\\]/\\&/g'); \
-#      sed -i "s/#define NGINX_VERSION.*\".*\"/#define NGINX_VERSION     \"${safe_version}\"/" \
-#        ${NGINX_DIR}/nginx/src/core/nginx.h; \
-#    fi; \
 
 # 下载 PCRE2 模块
 RUN set -eux; \
@@ -446,19 +445,14 @@ RUN set -eux; \
       --with-ld-opt='-ljemalloc -flto=auto -fPIE -fPIC -pie -Wl,-z,relro,-z,now -Wl,-O2 -Wl,--as-needed' \
       $EXTRA_ARGS; \
     make -j$(nproc); \
-    strip objs/nginx; \
-    make install; \
-    # 安全地裁剪所有动态模块的符号表，减小体积（如果没有动态模块则跳过）
-    if ls ${NGINX_DIR}/modules/*.so 1>/dev/null 2>&1; then \
-      strip ${NGINX_DIR}/modules/*.so; \
-    fi; \
+    make install
 
 
 # =======================================================
 # Stage 2: 运行阶段 (Runtime Stage)
 # CIS Docker Benchmark 合规 - 最小化镜像
 # =======================================================
-FROM debian:trixie-slim AS final
+FROM debian:trixie-slim
 
 # hadolint ignore=DL4006
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -511,16 +505,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; 2>/dev/null || true
 
 # 从编译阶段复制 Nginx 二进制文件和默认页面
-COPY --from=builder ${NGINX_DIR}/sbin ${NGINX_DIR}/sbin
-COPY --from=builder ${NGINX_DIR}/html ${NGINX_DIR}/html
-COPY --from=builder ${NGINX_DIR}/modules ${NGINX_DIR}/modules
+COPY --from=builder /opt/nginx/sbin /opt/nginx/sbin
+COPY --from=builder /opt/nginx/html /opt/nginx/html
+COPY --from=builder /opt/nginx/modules /opt/nginx/modules
 
 # 从编译阶段复制 Nginx 自带配置文件（mime.types、fastcgi 相关等）
-COPY --from=builder ${NGINX_DIR}/conf/mime.types ${NGINX_DIR}/conf/mime.types
-COPY --from=builder ${NGINX_DIR}/conf/fastcgi.conf ${NGINX_DIR}/conf/fastcgi.conf
-COPY --from=builder ${NGINX_DIR}/conf/fastcgi_params ${NGINX_DIR}/conf/fastcgi_params
-COPY --from=builder ${NGINX_DIR}/conf/uwsgi_params ${NGINX_DIR}/conf/uwsgi_params
-COPY --from=builder ${NGINX_DIR}/conf/scgi_params ${NGINX_DIR}/conf/scgi_params
+COPY --from=builder /opt/nginx/conf/mime.types /opt/nginx/conf/mime.types
+COPY --from=builder /opt/nginx/conf/fastcgi.conf /opt/nginx/conf/fastcgi.conf
+COPY --from=builder /opt/nginx/conf/fastcgi_params /opt/nginx/conf/fastcgi_params
+COPY --from=builder /opt/nginx/conf/uwsgi_params /opt/nginx/conf/uwsgi_params
+COPY --from=builder /opt/nginx/conf/scgi_params /opt/nginx/conf/scgi_params
 
 # 从编译阶段复制 ModSecurity 库文件
 COPY --from=builder /usr/local/modsecurity /usr/local/modsecurity
@@ -688,4 +682,4 @@ STOPSIGNAL SIGQUIT
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # 前台运行 Nginx（Docker 要求主进程在前台运行）
-CMD ["${NGINX_DIR}/sbin/nginx", "-g", "daemon off;"]
+CMD ["/opt/nginx/sbin/nginx", "-g", "daemon off;"]
