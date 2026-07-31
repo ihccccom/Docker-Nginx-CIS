@@ -38,11 +38,19 @@ chown -R root:www-data ${NGINX_DIR}/logs
 touch ${NGINX_DIR}/logs/nginx.pid && chmod u-x,go-wx ${NGINX_DIR}/logs/nginx.pid
 chown -R www-data:www-data /var/cache/nginx
 
-# 5. 修复网站根目录权限
-mkdir -p /www/wwwroot/html
-chown -R www-data:www-data /www/wwwroot/html
-chmod 755 /www/wwwroot/html
-find /www/wwwroot/html -type f -exec chmod 444 {} \;
+# =======================================================
+# 5. 初始化网站根目录（如果不存在则创建并赋予权限）
+# =======================================================
+if [ ! -d "/www/wwwroot/html" ]; then
+    mkdir -p /www/wwwroot/html
+    chown -R www-data:www-data /www/wwwroot/html
+    chmod 755 /www/wwwroot/html
+fi
+
+# 如果里面有文件需要确保只读，也可以加上判断（可选）
+if [ -d "/www/wwwroot/html" ]; then
+    find /www/wwwroot/html -type f ! -perm 444 -exec chmod 444 {} \; 2>/dev/null || true
+fi
 
 
 # 6. 确保缓存目录存在且权限正确
