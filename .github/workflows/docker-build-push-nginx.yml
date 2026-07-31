@@ -161,6 +161,7 @@ jobs:
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
+          provenance: false
           build-args: |
             NGINX_VERSION=${{ github.event.inputs.nginx_version || steps.versions.outputs.nginx_version }}
             OPENSSL_VERSION=${{ github.event.inputs.openssl_version || steps.versions.outputs.openssl_version }}
@@ -265,6 +266,7 @@ jobs:
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/arm64
+          provenance: false
           build-args: |
             NGINX_VERSION=${{ github.event.inputs.nginx_version || steps.versions.outputs.nginx_version }}
             OPENSSL_VERSION=${{ github.event.inputs.openssl_version || steps.versions.outputs.openssl_version }}
