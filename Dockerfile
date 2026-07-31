@@ -383,19 +383,19 @@ RUN set -eux; \
     cd ${NGINX_DIR}/nginx; \
     EXTRA_ARGS=""; \
     [ "${USE_ngx_cache_purge}" = "true" ] && \
-      EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ngx_cache_purge" || true; \
+      EXTRA_ARGS="$EXTRA_ARGS --add-dynamic-module=${NGINX_SRC_DIR}/ngx_cache_purge" || true; \
     [ "${USE_ngx_brotli}" = "true" ] && \
-      EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ngx_brotli" || true; \
+      EXTRA_ARGS="$EXTRA_ARGS --add-dynamic-module=${NGINX_SRC_DIR}/ngx_brotli" || true; \
     [ "${USE_ngx_http_headers_more_filter_module}" = "true" ] && \
-      EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/headers-more-nginx-module" || true; \
+      EXTRA_ARGS="$EXTRA_ARGS --add-dynamic-module=${NGINX_SRC_DIR}/headers-more-nginx-module" || true; \
     [ "${USE_modsecurity_nginx}" = "true" ] && \
-      EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ModSecurity-nginx" || true; \
+      EXTRA_ARGS="$EXTRA_ARGS --add-dynamic-module=${NGINX_SRC_DIR}/ModSecurity-nginx" || true; \
     [ "${USE_openssl}" = "true" ] && \
       EXTRA_ARGS="$EXTRA_ARGS --with-openssl=${NGINX_SRC_DIR}/openssl" || true; \
     [ "${USE_PCRE2}" = "true" ] && \
       EXTRA_ARGS="$EXTRA_ARGS --with-pcre=${NGINX_SRC_DIR}/pcre2" || true; \
     [ "${USE_ngx_fancyindex}" = "true" ] && \
-      EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ngx_fancyindex" || true; \
+      EXTRA_ARGS="$EXTRA_ARGS --add-dynamic-module=${NGINX_SRC_DIR}/ngx_fancyindex" || true; \
     \
     # 动态把通过 EXTRA_GITHUB_MODULES 下载的模块追加到编译参数中
     if [ -n "${EXTRA_GITHUB_MODULES}" ]; then \
@@ -499,6 +499,7 @@ RUN find / -perm /6000 -type f -exec chmod a-s {} \; 2>/dev/null || true
 # 从编译阶段复制 Nginx 二进制文件和默认页面
 COPY --from=builder /opt/nginx/sbin /opt/nginx/sbin
 COPY --from=builder /opt/nginx/html /opt/nginx/html
+COPY --from=builder /opt/nginx/modules /opt/nginx/modules
 
 # 从编译阶段复制 Nginx 自带配置文件（mime.types、fastcgi 相关等）
 COPY --from=builder /opt/nginx/conf/mime.types /opt/nginx/conf/mime.types
