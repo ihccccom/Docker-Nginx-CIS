@@ -219,12 +219,13 @@ RUN set -eux; \
         ${NGINX_DIR}/nginx/src/http/ngx_http_special_response.c; \
       sed -i "s/<hr><center>\" NGINX_VER \"<\/center>\" CRLF/<hr><center>${safe_name}<\/center>\" CRLF/" \
         ${NGINX_DIR}/nginx/src/http/ngx_http_special_response.c; \
-    fi; \
-    if [ -n "${NGINX_VERSION_NUMBER}" ]; then \
-      safe_version=$(printf '%s' "${NGINX_VERSION_NUMBER}" | sed 's/[&/\\]/\\&/g'); \
-      sed -i "s/#define NGINX_VERSION.*\".*\"/#define NGINX_VERSION      \"${safe_version}\"/" \
-        ${NGINX_DIR}/nginx/src/core/nginx.h; \
     fi
+#   这个是影响 nginx -v 或 nginx -V 时，显示的 注释掉
+#    if [ -n "${NGINX_VERSION_NUMBER}" ]; then \
+#      safe_version=$(printf '%s' "${NGINX_VERSION_NUMBER}" | sed 's/[&/\\]/\\&/g'); \
+#      sed -i "s/#define NGINX_VERSION.*\".*\"/#define NGINX_VERSION     \"${safe_version}\"/" \
+#        ${NGINX_DIR}/nginx/src/core/nginx.h; \
+#    fi; \
 
 # 下载 PCRE2 模块
 RUN set -eux; \
@@ -445,7 +446,12 @@ RUN set -eux; \
       --with-ld-opt='-ljemalloc -flto=auto -fPIE -fPIC -pie -Wl,-z,relro,-z,now -Wl,-O2 -Wl,--as-needed' \
       $EXTRA_ARGS; \
     make -j$(nproc); \
-    make install
+    strip objs/nginx; \
+    make install; \
+    # 安全地裁剪所有动态模块的符号表，减小体积（如果没有动态模块则跳过）
+    if ls ${NGINX_DIR}/modules/*.so 1>/dev/null 2>&1; then \
+      strip ${NGINX_DIR}/modules/*.so; \
+    fi; \
 
 
 # =======================================================
@@ -461,7 +467,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 LABEL org.opencontainers.image.title="Nginx" \
       org.opencontainers.image.description="Security-hardened Nginx with ModSecurity WAF, CIS Benchmark compliant" \
       org.opencontainers.image.source="https://github.com/ihccccom/Docker-Nginx-CIS" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="BSD-3-Clause"
 
 # 重新声明运行时需要的 ARGs
 ARG USE_modsecurity
