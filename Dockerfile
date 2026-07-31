@@ -385,7 +385,7 @@ RUN set -eux; \
     cd ${NGINX_DIR}/nginx; \
     EXTRA_ARGS=""; \
     [ "${USE_ngx_cache_purge}" = "true" ] && \
-      EXTRA_ARGS="$EXTRA_ARGS --add-dynamic-module=${NGINX_SRC_DIR}/ngx_cache_purge" || true; \
+      EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/ngx_cache_purge" || true; \
     [ "${USE_ngx_brotli}" = "true" ] && \
       EXTRA_ARGS="$EXTRA_ARGS --add-dynamic-module=${NGINX_SRC_DIR}/ngx_brotli" || true; \
     [ "${USE_ngx_http_headers_more_filter_module}" = "true" ] && \
