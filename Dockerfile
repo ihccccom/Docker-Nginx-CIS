@@ -86,10 +86,12 @@ ARG MODSECURITY_VERSION="v3.0.16"
 ###############################################
 # 自定义模块入口 (Extra Nginx Modules)
 # 1. EXTRA_NGINX_MODULES: 可添加额外的 --add-module 或 --add-dynamic-module 参数
-# 2. EXTRA_GITHUB_MODULES: 可通过 GitHub 动态下载并编译模块，格式: "作者/仓库名/分支或标签" (多个用空格隔开)
+# 2. EXTRA_GITHUB_MODULES: 可通过 GitHub 动态下载并编译模块
+#    格式: "作者/仓库名/分支或标签[/static|dynamic]" (多个用空格隔开)
+#    第4段可省略，省略时默认按 dynamic（动态）编译
 # 填写示例:
-#   ARG EXTRA_NGINX_MODULES="--add-module=/opt/nginx/src/my-custom-module"
-#   ARG EXTRA_GITHUB_MODULES="chobits/ngx_http_proxy_connect_module/v0.0.5 simplified/ngx_devel_kit/master"
+#   ARG EXTRA_NGINX_MODULES="--add-dynamic-module=/opt/nginx/src/my-custom-module"
+#   ARG EXTRA_GITHUB_MODULES="chobits/ngx_http_proxy_connect_module/v0.0.5/static simplified/ngx_devel_kit/master"
 ###############################################
 ARG EXTRA_NGINX_MODULES=""
 ARG EXTRA_GITHUB_MODULES=""
@@ -401,8 +403,14 @@ RUN set -eux; \
     if [ -n "${EXTRA_GITHUB_MODULES}" ]; then \
       for mod_item in ${EXTRA_GITHUB_MODULES}; do \
         repo_name=$(echo "${mod_item}" | cut -d'/' -f2); \
+        mod_mode=$(echo "${mod_item}" | cut -d'/' -f4); \
+        [ -z "${mod_mode}" ] && mod_mode="dynamic"; \
         if [ -d "${NGINX_SRC_DIR}/${repo_name}" ]; then \
-          EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/${repo_name}"; \
+          if [ "${mod_mode}" = "static" ]; then \
+            EXTRA_ARGS="$EXTRA_ARGS --add-module=${NGINX_SRC_DIR}/${repo_name}"; \
+          else \
+            EXTRA_ARGS="$EXTRA_ARGS --add-dynamic-module=${NGINX_SRC_DIR}/${repo_name}"; \
+          fi; \
         fi; \
       done; \
     fi; \
