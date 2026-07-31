@@ -220,6 +220,7 @@ RUN set -eux; \
       sed -i "s/<hr><center>\" NGINX_VER \"<\/center>\" CRLF/<hr><center>${safe_name}<\/center>\" CRLF/" \
         ${NGINX_DIR}/nginx/src/http/ngx_http_special_response.c; \
     fi
+#   这个是影响 nginx -v 或 nginx -V 时，显示的 注释掉
 #    if [ -n "${NGINX_VERSION_NUMBER}" ]; then \
 #      safe_version=$(printf '%s' "${NGINX_VERSION_NUMBER}" | sed 's/[&/\\]/\\&/g'); \
 #      sed -i "s/#define NGINX_VERSION.*\".*\"/#define NGINX_VERSION     \"${safe_version}\"/" \
@@ -445,10 +446,11 @@ RUN set -eux; \
       --with-ld-opt='-ljemalloc -flto=auto -fPIE -fPIC -pie -Wl,-z,relro,-z,now -Wl,-O2 -Wl,--as-needed' \
       $EXTRA_ARGS; \
     make -j$(nproc); \
+    strip objs/nginx; \
     make install; \
-    strip /opt/nginx/sbin/nginx; \
-    if ls /opt/nginx/modules/*.so 1>/dev/null 2>&1; then \
-      strip /opt/nginx/modules/*.so; \
+    # 安全地裁剪所有动态模块的符号表，减小体积（如果没有动态模块则跳过）
+    if ls ${NGINX_DIR}/modules/*.so 1>/dev/null 2>&1; then \
+      strip ${NGINX_DIR}/modules/*.so; \
     fi
 
 
@@ -465,7 +467,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 LABEL org.opencontainers.image.title="Nginx" \
       org.opencontainers.image.description="Security-hardened Nginx with ModSecurity WAF, CIS Benchmark compliant" \
       org.opencontainers.image.source="https://github.com/ihccccom/Docker-Nginx-CIS" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="BSD-3-Clause"
 
 # 重新声明运行时需要的 ARGs
 ARG USE_modsecurity
@@ -509,16 +511,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; 2>/dev/null || true
 
 # 从编译阶段复制 Nginx 二进制文件和默认页面
-COPY --from=builder /opt/nginx/sbin /opt/nginx/sbin
-COPY --from=builder /opt/nginx/html /opt/nginx/html
-COPY --from=builder /opt/nginx/modules /opt/nginx/modules
+COPY --from=builder /opt/nginx/sbin ${NGINX_DIR}/sbin
+COPY --from=builder /opt/nginx/html ${NGINX_DIR}/html
+COPY --from=builder /opt/nginx/modules ${NGINX_DIR}/modules
 
 # 从编译阶段复制 Nginx 自带配置文件（mime.types、fastcgi 相关等）
-COPY --from=builder /opt/nginx/conf/mime.types /opt/nginx/conf/mime.types
-COPY --from=builder /opt/nginx/conf/fastcgi.conf /opt/nginx/conf/fastcgi.conf
-COPY --from=builder /opt/nginx/conf/fastcgi_params /opt/nginx/conf/fastcgi_params
-COPY --from=builder /opt/nginx/conf/uwsgi_params /opt/nginx/conf/uwsgi_params
-COPY --from=builder /opt/nginx/conf/scgi_params /opt/nginx/conf/scgi_params
+COPY --from=builder /opt/nginx/conf/mime.types ${NGINX_DIR}/conf/mime.types
+COPY --from=builder /opt/nginx/conf/fastcgi.conf ${NGINX_DIR}/conf/fastcgi.conf
+COPY --from=builder /opt/nginx/conf/fastcgi_params ${NGINX_DIR}/conf/fastcgi_params
+COPY --from=builder /opt/nginx/conf/uwsgi_params ${NGINX_DIR}/conf/uwsgi_params
+COPY --from=builder /opt/nginx/conf/scgi_params ${NGINX_DIR}/conf/scgi_params
 
 # 从编译阶段复制 ModSecurity 库文件
 COPY --from=builder /usr/local/modsecurity /usr/local/modsecurity
