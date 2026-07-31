@@ -458,7 +458,7 @@ RUN set -eux; \
 # Stage 2: 运行阶段 (Runtime Stage)
 # CIS Docker Benchmark 合规 - 最小化镜像
 # =======================================================
-FROM debian:trixie-slim AS final
+FROM debian:trixie-slim
 
 # hadolint ignore=DL4006
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -467,7 +467,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 LABEL org.opencontainers.image.title="Nginx" \
       org.opencontainers.image.description="Security-hardened Nginx with ModSecurity WAF, CIS Benchmark compliant" \
       org.opencontainers.image.source="https://github.com/ihccccom/Docker-Nginx-CIS" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="BSD-3-Clause"
 
 # 重新声明运行时需要的 ARGs
 ARG USE_modsecurity
@@ -511,16 +511,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; 2>/dev/null || true
 
 # 从编译阶段复制 Nginx 二进制文件和默认页面
-COPY --from=builder ${NGINX_DIR}/sbin ${NGINX_DIR}/sbin
-COPY --from=builder ${NGINX_DIR}/html ${NGINX_DIR}/html
-COPY --from=builder ${NGINX_DIR}/modules ${NGINX_DIR}/modules
+COPY --from=builder /opt/nginx/sbin ${NGINX_DIR}/sbin
+COPY --from=builder /opt/nginx/html ${NGINX_DIR}/html
+COPY --from=builder /opt/nginx/modules ${NGINX_DIR}/modules
 
 # 从编译阶段复制 Nginx 自带配置文件（mime.types、fastcgi 相关等）
-COPY --from=builder ${NGINX_DIR}/conf/mime.types ${NGINX_DIR}/conf/mime.types
-COPY --from=builder ${NGINX_DIR}/conf/fastcgi.conf ${NGINX_DIR}/conf/fastcgi.conf
-COPY --from=builder ${NGINX_DIR}/conf/fastcgi_params ${NGINX_DIR}/conf/fastcgi_params
-COPY --from=builder ${NGINX_DIR}/conf/uwsgi_params ${NGINX_DIR}/conf/uwsgi_params
-COPY --from=builder ${NGINX_DIR}/conf/scgi_params ${NGINX_DIR}/conf/scgi_params
+COPY --from=builder /opt/nginx/conf/mime.types ${NGINX_DIR}/conf/mime.types
+COPY --from=builder /opt/nginx/conf/fastcgi.conf ${NGINX_DIR}/conf/fastcgi.conf
+COPY --from=builder /opt/nginx/conf/fastcgi_params ${NGINX_DIR}/conf/fastcgi_params
+COPY --from=builder /opt/nginx/conf/uwsgi_params ${NGINX_DIR}/conf/uwsgi_params
+COPY --from=builder /opt/nginx/conf/scgi_params ${NGINX_DIR}/conf/scgi_params
 
 # 从编译阶段复制 ModSecurity 库文件
 COPY --from=builder /usr/local/modsecurity /usr/local/modsecurity
@@ -688,4 +688,4 @@ STOPSIGNAL SIGQUIT
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # 前台运行 Nginx（Docker 要求主进程在前台运行）
-CMD ["${NGINX_DIR}/sbin/nginx", "-g", "daemon off;"]
+CMD ["/opt/nginx/sbin/nginx", "-g", "daemon off;"]
