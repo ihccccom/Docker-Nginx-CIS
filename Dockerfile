@@ -609,9 +609,9 @@ RUN set -eux; \
       curl -L --retry 5 --retry-delay 2 --retry-connrefused \
         -o "coreruleset-${owasp_VERSION}.tar.gz" "$owasp_DOWNLOAD_URL"; \
       tar -zxf "coreruleset-${owasp_VERSION}.tar.gz"; \
-      mv -f "coreruleset-${owasp_VERSION_NO_V}/docs" ${NGINX_DIR}/conf/modsecurity/docs; \
+      # mv -f "coreruleset-${owasp_VERSION_NO_V}/docs" ${NGINX_DIR}/conf/modsecurity/docs; \
       mv -f "coreruleset-${owasp_VERSION_NO_V}/plugins" ${NGINX_DIR}/conf/modsecurity/plugins; \
-      mv -f "coreruleset-${owasp_VERSION_NO_V}/regex-assembly" ${NGINX_DIR}/conf/modsecurity/regex-assembly; \
+      # mv -f "coreruleset-${owasp_VERSION_NO_V}/regex-assembly" ${NGINX_DIR}/conf/modsecurity/regex-assembly; \
       mv -f "coreruleset-${owasp_VERSION_NO_V}/rules" ${NGINX_DIR}/conf/modsecurity/rules; \
       rm -rf "coreruleset-${owasp_VERSION_NO_V}"; \
       rm -f "coreruleset-${owasp_VERSION}.tar.gz"; \
