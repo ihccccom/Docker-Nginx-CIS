@@ -672,6 +672,14 @@ RUN touch ${NGINX_DIR}/logs/nginx.pid \
     # Nginx 缓存目录权限
     && chown -R www-data:www-data /var/cache/nginx
 
+# ============================================================
+# 生成 conf / conf.d 的"出厂种子"副本，供 entrypoint 在
+# bind mount 为空目录时自动初始化（首次启动 or 手动清空重置）
+# ============================================================
+RUN mkdir -p /opt/config-seed \
+    && cp -a ${NGINX_DIR}/conf /opt/config-seed/conf \
+    && cp -a ${NGINX_DIR}/conf.d /opt/config-seed/conf.d
+
 # CIS Docker 4.9 - 使用 COPY 而非 ADD
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod 500 /docker-entrypoint.sh
