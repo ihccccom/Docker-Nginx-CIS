@@ -37,8 +37,6 @@ services:
       - nginx-ssl:/opt/nginx/ssl               # SSL 证书
       - nginx-logs:/opt/nginx/logs             # 日志文件
       - wwwroot:/www/wwwroot                   # 网站根目录
-      - owasp:/opt/owasp                       # OWASP 规则集
-      - nginx-cache:/var/cache/nginx           # Nginx 缓存
 
     # ============================================================
     # CIS Docker Benchmark 安全配置
@@ -120,10 +118,6 @@ volumes:
     name: nginx-logs
   wwwroot:
     name: wwwroot
-  owasp:
-    name: owasp
-  nginx-cache:
-    name: nginx-cache
 
 # 网络定义
 networks:
