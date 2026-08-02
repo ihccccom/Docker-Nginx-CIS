@@ -8,6 +8,17 @@ set -e
 
 NGINX_DIR="/opt/nginx"
 
+# 0. 首次运行 / 手动清空重置时，从镜像内置种子自动初始化 conf 和 conf.d
+SEED_ROOT="/opt/config-seed"
+for d in conf conf.d; do
+    LIVE_DIR="${NGINX_DIR}/${d}"
+    SEED_DIR="${SEED_ROOT}/${d}"
+    if [ -d "${SEED_DIR}" ] && [ -z "$(ls -A "${LIVE_DIR}" 2>/dev/null)" ]; then
+        echo "检测到 ${LIVE_DIR} 为空，正在从镜像内置副本初始化..."
+        cp -a "${SEED_DIR}/." "${LIVE_DIR}/"
+    fi
+done
+
 # 1. 修复主配置与子目录权限
 find ${NGINX_DIR}/conf -type d -exec chmod 700 {} \;
 find ${NGINX_DIR}/conf -type f -exec chmod 600 {} \;
