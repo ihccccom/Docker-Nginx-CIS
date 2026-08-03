@@ -71,10 +71,35 @@ chown -R www-data:www-data /var/cache/nginx
 # =======================================================
 # 6. 初始化网站根目录（如果不存在则创建并赋予权限）
 # =======================================================
-if [ ! -d "/www/wwwroot/html" ]; then
-    mkdir -p /www/wwwroot/html
-    chown -R www-data:www-data /www/wwwroot/html
-    chmod 755 /www/wwwroot/html
+# =======================================================
+# 批量检查并修正 /www/wwwroot 下所有网站根目录的用户和组
+# =======================================================
+WWWROOT_BASE="/www/wwwroot"
+TARGET_USER="www-data"
+TARGET_GROUP="www-data"
+
+if [ -d "$WWWROOT_BASE" ]; then
+    echo "🔍 正在检查 $WWWROOT_BASE 下的所有网站根目录..."
+    
+    # 遍历 /www/wwwroot 下的一级子目录
+    for site_dir in "$WWWROOT_BASE"/*; do
+        if [ -d "$site_dir" ]; then
+            # 获取当前目录的属主（兼容 Linux 和 macOS）
+            CURRENT_OWNER=$(stat -c '%U:%G' "$site_dir" 2>/dev/null || stat -f '%Su:%Sg' "$site_dir" 2>/dev/null)
+            
+            if [ "$CURRENT_OWNER" != "$TARGET_USER:$TARGET_GROUP" ]; then
+                echo "⚠️ 目录 $(basename "$site_dir") 的属主为 [$CURRENT_OWNER]，正在自动修正为 [$TARGET_USER:$TARGET_GROUP]..."
+                chown -R "$TARGET_USER:$TARGET_GROUP" "$site_dir"
+            else
+                echo "✅ 目录 $(basename "$site_dir") 属主正常 ($TARGET_USER:$TARGET_GROUP)"
+            fi
+            
+            # 确保目录权限为 755
+            chmod 755 "$site_dir"
+        fi
+    done
+else
+    echo "ℹ️ 目录 $WWWROOT_BASE 不存在，跳过检查。"
 fi
 
 # 如果里面有文件需要确保只读，也可以加上判断（可选）
