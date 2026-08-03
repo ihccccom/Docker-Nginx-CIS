@@ -62,11 +62,11 @@ services:
 
     # 数据卷（使用命名卷，首次运行自动从镜像初始化）
     volumes:
-      - nginx-conf:/opt/nginx/conf            # Nginx 配置文件
-      - nginx-confd:/opt/nginx/conf.d          # 网站配置文件
-      - nginx-ssl:/opt/nginx/ssl               # SSL 证书
-      - nginx-logs:/opt/nginx/logs             # 日志文件
-      - wwwroot:/www/wwwroot                   # 网站根目录
+      - ./conf:/opt/nginx/conf            # Nginx 配置文件
+      - ./conf.d:/opt/nginx/conf.d          # 网站配置文件
+      - ./ssl:/opt/nginx/ssl               # SSL 证书
+      - ./logs:/opt/nginx/logs             # 日志文件
+      - ./wwwroot:/www/wwwroot                   # 网站根目录
     # ============================================================
     # CIS Docker Benchmark 安全配置
     # ============================================================
