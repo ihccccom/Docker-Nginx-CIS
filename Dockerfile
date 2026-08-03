@@ -678,7 +678,8 @@ RUN touch ${NGINX_DIR}/logs/nginx.pid \
 # ============================================================
 RUN mkdir -p /opt/config-seed \
     && cp -a ${NGINX_DIR}/conf /opt/config-seed/conf \
-    && cp -a ${NGINX_DIR}/conf.d /opt/config-seed/conf.d
+    && cp -a ${NGINX_DIR}/conf.d /opt/config-seed/conf.d \
+    && cp -a ${NGINX_DIR}/ssl /opt/config-seed/ssl
 
 # CIS Docker 4.9 - 使用 COPY 而非 ADD
 COPY docker-entrypoint.sh /docker-entrypoint.sh
