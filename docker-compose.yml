@@ -110,6 +110,7 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
       - /run:rw,noexec,nosuid,size=8m
+      - /var/cache/nginx:rw,noexec,nosuid,size=256m
 
     # CIS 5.26 - 健康检查（已在 Dockerfile 中定义）
     # 此处可覆盖 Dockerfile 中的健康检查配置
