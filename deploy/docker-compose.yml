@@ -59,6 +59,7 @@ services:
       - SETUID              # 切换用户（master→worker）
       - SETGID              # 切换用户组
       - DAC_OVERRIDE        # 文件权限覆盖
+      - FOWNER              # chmod -R
 
     # CIS 5.10/5.11 - 资源限制（防止资源耗尽攻击）
     deploy:
