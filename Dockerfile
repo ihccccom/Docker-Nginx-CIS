@@ -56,10 +56,10 @@ ARG USE_modsecurity_nginx=true
 ###############################################
 
 # Nginx 版本 (必须手动指定)
-ARG NGINX_VERSION=1.30.4
+ARG NGINX_VERSION=1.30.5
 
 # OpenSSL 版本 (必须手动指定)
-ARG OPENSSL_VERSION=3.5.7
+ARG OPENSSL_VERSION=3.5.8
 
 # PCRE2 版本 (留空自动获取最新版, 例如: "pcre2-10.45")
 ARG PCRE2_VERSION="pcre2-10.47"
