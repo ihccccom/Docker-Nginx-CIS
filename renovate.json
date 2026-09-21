@@ -71,7 +71,9 @@
     {
       "customType": "regex",
       "description": "Nginx 主程序版本 (nginx.org 源码，Renovate 无原生 nginx.org 数据源，用 GitHub 镜像 tag 比对)",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG NGINX_VERSION=(?<currentValue>[\\d.]+)"],
       "depNameTemplate": "nginx/nginx",
       "datasourceTemplate": "github-tags",
@@ -80,7 +82,9 @@
     {
       "customType": "regex",
       "description": "OpenSSL 版本",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG OPENSSL_VERSION=(?<currentValue>[\\d.]+)"],
       "depNameTemplate": "openssl/openssl",
       "datasourceTemplate": "github-tags",
@@ -89,7 +93,9 @@
     {
       "customType": "regex",
       "description": "PCRE2 版本 (ARG 值本身含 pcre2- 前缀，与 GitHub Release tag 完全一致)",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG PCRE2_VERSION=\"(?<currentValue>pcre2-[\\d.]+)\""],
       "depNameTemplate": "PhilipHazel/pcre2",
       "datasourceTemplate": "github-releases"
@@ -97,7 +103,9 @@
     {
       "customType": "regex",
       "description": "ngx-fancyindex 版本",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG FANCYINDEX_VERSION=(?<currentValue>[\\d.]+)"],
       "depNameTemplate": "aperezdc/ngx-fancyindex",
       "datasourceTemplate": "github-releases",
@@ -106,7 +114,9 @@
     {
       "customType": "regex",
       "description": "ngx_cache_purge 版本",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG NGX_CACHE_PURGE_VERSION=\"(?<currentValue>[\\d.]+)\""],
       "depNameTemplate": "FRiCKLE/ngx_cache_purge",
       "datasourceTemplate": "github-tags"
@@ -114,7 +124,9 @@
     {
       "customType": "regex",
       "description": "headers-more-nginx-module 版本 (ARG 值不带 v 前缀，tag 带 v)",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG HEADERS_MORE_VERSION=\"(?<currentValue>[\\d.]+)\""],
       "depNameTemplate": "openresty/headers-more-nginx-module",
       "datasourceTemplate": "github-tags",
@@ -123,7 +135,9 @@
     {
       "customType": "regex",
       "description": "ModSecurity-nginx 连接器版本 (ARG 值本身带 v 前缀)",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG MODSECURITY_NGINX_VERSION=\"(?<currentValue>v[\\d.]+)\""],
       "depNameTemplate": "owasp-modsecurity/ModSecurity-nginx",
       "datasourceTemplate": "github-tags"
@@ -131,7 +145,9 @@
     {
       "customType": "regex",
       "description": "OWASP CRS 规则集版本 (ARG 值本身带 v 前缀)",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG OWASP_CRS_VERSION=\"(?<currentValue>v[\\d.]+)\""],
       "depNameTemplate": "coreruleset/coreruleset",
       "datasourceTemplate": "github-releases"
@@ -139,7 +155,9 @@
     {
       "customType": "regex",
       "description": "ModSecurity 核心引擎版本 (ARG 值本身带 v 前缀)",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": ["ARG MODSECURITY_VERSION=\"(?<currentValue>v[\\d.]+)\""],
       "depNameTemplate": "owasp-modsecurity/ModSecurity",
       "datasourceTemplate": "github-tags"
