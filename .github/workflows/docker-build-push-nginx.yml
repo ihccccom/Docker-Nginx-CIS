@@ -191,7 +191,7 @@ jobs:
   build-arm64:
     name: Build & Push Docker Image (arm64)
     if: contains(github.event.inputs.platforms || 'linux/amd64,linux/arm64', 'arm64')
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
 
     permissions:
       contents: read
