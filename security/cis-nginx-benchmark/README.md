@@ -73,10 +73,10 @@ CIS Nginx Benchmark 是由互联网安全中心发布的 Nginx 专用安全配�
 
 ```bash
 # 查看已编译的模块
-docker exec nginx-secure nginx -V 2>&1 | tr ' ' '\n' | grep -E "with|without"
+docker exec nginx nginx -V 2>&1 | tr ' ' '\n' | grep -E "with|without"
 
 # 确认 autoindex 未启用
-docker exec nginx-secure nginx -V 2>&1 | grep -c "http_autoindex_module"
+docker exec nginx nginx -V 2>&1 | grep -c "http_autoindex_module"
 # 预期输出：0
 ```
 
@@ -152,11 +152,11 @@ RUN chmod 640 /etc/nginx/nginx.conf && \
 
 ```bash
 # 检查配置文件权限
-docker exec nginx-secure stat -c '%a %U:%G' /etc/nginx/nginx.conf
+docker exec nginx stat -c '%a %U:%G' /etc/nginx/nginx.conf
 # 预期：640 root:nginx
 
 # 检查日志目录权限
-docker exec nginx-secure stat -c '%a %U:%G' /var/log/nginx
+docker exec nginx stat -c '%a %U:%G' /var/log/nginx
 # 预期：750 nginx:nginx
 ```
 
@@ -323,14 +323,14 @@ http {
 
 ```bash
 # 检查日志格式
-docker exec nginx-secure nginx -T 2>/dev/null | grep "log_format"
+docker exec nginx nginx -T 2>/dev/null | grep "log_format"
 
 # 检查访问日志输出
 curl -s https://localhost:8443/ > /dev/null && \
-  docker exec nginx-secure tail -1 /var/log/nginx/access.log
+  docker exec nginx tail -1 /var/log/nginx/access.log
 
 # 检查错误日志级别
-docker exec nginx-secure nginx -T 2>/dev/null | grep "error_log"
+docker exec nginx nginx -T 2>/dev/null | grep "error_log"
 ```
 
 ### 4.1 代理安全头

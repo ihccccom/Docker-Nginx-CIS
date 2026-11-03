@@ -1,0 +1,82 @@
+#include <tunables/global>
+profile docker-nginx flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # 禁止交互式 shell（保留 /bin/sh 供 entrypoint）
+  deny /bin/bash mrwklx,
+  deny /bin/dash mrwklx,
+
+  # 禁止危险操作
+  deny /proc/** w,
+  deny /sys/** w,
+  deny /root/** rwklx,
+  deny mount,
+  deny umount,
+  deny ptrace (trace, read),
+  deny network raw,
+
+  # 网络访问（含 QUIC/HTTP/3 UDP）
+  network inet tcp,
+  network inet udp,
+  network inet6 tcp,
+  network inet6 udp,
+  unix (create, listen, accept, connect, send, receive) type=stream,
+
+  # 信号
+  signal (send, receive) peer=docker-nginx,
+  signal (receive) peer=unconfined,
+
+  # 启动脚本和 shell（entrypoint 需要）
+  /bin/sh ix,
+  /docker-entrypoint.sh ix,
+  /usr/bin/find ix,
+  /bin/chmod ix,
+  /bin/chown ix,
+  /bin/mkdir ix,
+  /bin/cp ix,
+  /bin/ln ix,
+  /bin/touch ix,
+  /bin/ls ix,
+  /usr/bin/basename ix,
+  /usr/bin/stat ix,
+
+  # Nginx 主程序与模块
+  /opt/nginx/sbin/nginx ix,
+  /opt/nginx/modules/** mr,
+
+  # 配置和资源
+  /opt/nginx/conf/** rw,
+  /opt/nginx/conf.d/** rw,
+  /opt/nginx/html/** r,
+  /opt/config-seed/** r,
+  /etc/ssl/** r,
+  /etc/resolv.conf r,
+  /etc/hosts r,
+  /etc/nsswitch.conf r,
+  /etc/ld.so.cache r,
+  /etc/ld.so.conf.d/** r,
+  /lib/** r,
+  /lib64/** r,
+  /usr/lib/** r,
+  /usr/local/modsecurity/** mr,
+  /www/wwwroot/** rw,
+
+  # Docker Secrets
+  /run/secrets/** r,
+
+  # proc 信息
+  /proc/sys/kernel/ngroups_max r,
+  /proc/sys/net/** r,
+
+  # 运行时读写
+  /opt/nginx/logs/** rw,
+  /opt/nginx/ssl/** rw,
+  /var/cache/nginx/** rw,
+  /var/log/nginx/** rw,
+  /opt/nginx/logs/nginx.pid rw,
+  /run/nginx.pid rw,
+  /tmp/** rw,
+  /dev/null rw,
+  /dev/urandom r,
+  /dev/random r,
+}

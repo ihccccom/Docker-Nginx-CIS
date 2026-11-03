@@ -1,0 +1,31 @@
+# =======================================================
+# 可选：对已发布的 Docker Hub 镜像做 Trivy 漏洞扫描
+# 默认手动触发，避免拖慢每次推送；发版前建议执行。
+# =======================================================
+
+name: Image Vulnerability Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: '要扫描的镜像（含标签）'
+        required: true
+        default: 'ihccccom/nginx:latest'
+  schedule:
+    # 每周一 03:00 UTC
+    - cron: '0 3 * * 1'
+
+jobs:
+  trivy:
+    name: Trivy scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ github.event.inputs.image || 'ihccccom/nginx:latest' }}
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'

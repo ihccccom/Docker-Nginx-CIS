@@ -485,6 +485,8 @@ ARG USE_modsecurity
 ARG USE_modsecurity_nginx
 ARG USE_owasp
 ARG USE_ngx_brotli
+ARG USE_ngx_http_headers_more_filter_module
+ARG USE_ngx_fancyindex
 ARG OWASP_CRS_VERSION
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -557,7 +559,8 @@ RUN mkdir -p \
 
 # 根据 CIS Nginx 2.4.2 - 创建默认自签名 SSL 证书
 # PCI DSS 4.1 - 生成 DH 参数（>= 2048 位）用于 TLS 密钥交换
-RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+# 默认自签名仅用于 catch-all；企业生产请挂载正式证书（建议 ≤398 天周期轮换）
+RUN openssl req -x509 -nodes -days 825 -newkey rsa:2048 \
       -keyout ${NGINX_DIR}/ssl/default/default.key \
       -out ${NGINX_DIR}/ssl/default/default.pem \
       -subj "/C=XX/ST=Default/L=Default/O=Default/CN=localhost" \
@@ -574,6 +577,8 @@ RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
 COPY conf/nginx.conf ${NGINX_DIR}/conf/nginx.conf
 COPY conf/proxy.conf ${NGINX_DIR}/conf/proxy.conf
 COPY conf/security-headers-common.conf ${NGINX_DIR}/conf/security-headers-common.conf
+COPY conf/real-ip.conf ${NGINX_DIR}/conf/real-ip.conf
+COPY conf/resolvers.conf ${NGINX_DIR}/conf/resolvers.conf
 COPY conf/example.com.conf.template ${NGINX_DIR}/conf.d/sites-available/example.com.conf.template
 COPY conf/php/ ${NGINX_DIR}/conf/php/
 RUN sed -i "s|%NGINX_DIR%|${NGINX_DIR}|g" ${NGINX_DIR}/conf/nginx.conf \
@@ -583,13 +588,24 @@ RUN sed -i "s|%NGINX_DIR%|${NGINX_DIR}|g" ${NGINX_DIR}/conf/nginx.conf \
 # 根据编译选项条件性禁用 nginx.conf 中的模块配置
 # 如果 Brotli 未编译，注释掉 brotli 指令（避免 "unknown directive" 错误）
 # 如果 ModSecurity 未编译，注释掉 modsecurity 指令
-RUN if [ "${USE_ngx_brotli}" != "true" ]; then \
-      sed -i '/\[BROTLI_START\]/,/\[BROTLI_END\]/{ /\[BROTLI_START\]/d; /\[BROTLI_END\]/d; s/^/# /; }' \
+RUN comment_block() { \
+      sed -i "/\[$1_START\]/,/\[$1_END\]/{ /\[$1_START\]/d; /\[$1_END\]/d; s/^/# /; }" \
         ${NGINX_DIR}/conf/nginx.conf; \
-    fi \
-    && if [ "${USE_modsecurity_nginx}" != "true" ]; then \
-      sed -i '/\[MODSECURITY_START\]/,/\[MODSECURITY_END\]/{ /\[MODSECURITY_START\]/d; /\[MODSECURITY_END\]/d; s/^/# /; }' \
-        ${NGINX_DIR}/conf/nginx.conf; \
+    }; \
+    if [ "${USE_ngx_brotli}" != "true" ]; then \
+      comment_block BROTLI_LOAD; \
+      comment_block BROTLI; \
+    fi; \
+    if [ "${USE_modsecurity_nginx}" != "true" ]; then \
+      comment_block MODSECURITY_LOAD; \
+      comment_block MODSECURITY; \
+    fi; \
+    if [ "${USE_ngx_http_headers_more_filter_module}" != "true" ]; then \
+      comment_block HEADERS_MORE_LOAD; \
+      comment_block HEADERS_MORE; \
+    fi; \
+    if [ "${USE_ngx_fancyindex}" != "true" ]; then \
+      comment_block FANCYINDEX_LOAD; \
     fi
 
 # 复制 ModSecurity 配置文件并替换路径占位符

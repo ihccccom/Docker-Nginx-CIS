@@ -64,6 +64,15 @@ services:
 
     restart: unless-stopped
 
+    stop_grace_period: 30s
+    stop_signal: SIGQUIT
+
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m

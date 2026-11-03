@@ -6,8 +6,8 @@ server {
     return 301 https://$host$request_uri;
 }
 
-# 监听 443 端口（TCP + QUIC/HTTP/3）
-# 部署时请确保 compose/宿主机同时映射 TCP 443 与 UDP 443
+# 监听 443（TCP + QUIC/HTTP/3）
+# 部署时请确保同时映射 TCP 443 与 UDP 443
 server {
     listen 443 quic;
     listen [::]:443 quic;
@@ -23,71 +23,48 @@ server {
     root /www/wwwroot/%DOMAIN%;
 
     error_page 497 https://$host$request_uri;
-
-    # HTTP/3 发现头
     add_header Alt-Svc 'h3=":443"; ma=86400';
-
     http3_max_concurrent_streams 128;
 
     ssl_certificate %NGINX_DIR%/ssl/%DOMAIN%/fullchain.pem;
     ssl_certificate_key %NGINX_DIR%/ssl/%DOMAIN%/privkey.pem;
-
-    ssl_ecdh_curve X25519:secp384r1;
-
-    ssl_session_timeout 10m;
-    ssl_session_cache shared:MozSSL:10m;
-    # 与全局策略一致：关闭 session tickets，利于前向保密
-    ssl_session_tickets off;
-
-    ssl_dhparam %NGINX_DIR%/ssl/dhparam.pem;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305;
-    ssl_prefer_server_ciphers off;
-
-    ssl_stapling on;
-    ssl_stapling_verify on;
     ssl_trusted_certificate %NGINX_DIR%/ssl/%DOMAIN%/ca.pem;
 
-    resolver 8.8.8.8 9.9.9.9 1.1.1.1 valid=300s;
-    resolver_timeout 5s;
+    # 会话/协议继承全局 http{}；站点仅保留必要覆盖
+    ssl_session_tickets off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
 
     include %NGINX_DIR%/conf/security-headers-common.conf;
-
     add_header X-Frame-Options "DENY" always;
 
-    # 默认偏严格的 CSP；若站点确需第三方脚本，请按业务收紧/放宽，勿直接放开任意 https:
+    # 默认偏严格 CSP；第三方脚本请按业务白名单放行，勿直接放开任意 https:
     add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" always;
 
-    # 使用主配置中已声明的限流 zone
     limit_req zone=req_limit burst=20 nodelay;
     limit_conn perip 40;
+    limit_conn perserver 200;
 
     location / {
         try_files $uri $uri/ /index.php?$args;
-
-        # 只放行站点实际需要的方法
         limit_except GET HEAD POST PUT PATCH DELETE OPTIONS {
             deny all;
         }
     }
 
-    # WordPress 上传目录禁止执行 PHP
     location ~* ^/wp-content/uploads/.*\.php$ {
         deny all;
         access_log off;
         log_not_found off;
     }
 
-    # 开启 PHP（需已部署 PHP-FPM 服务，默认别名 php:36000）
     #include %NGINX_DIR%/conf/php/enable-php-84.conf;
 
-    # 禁止访问敏感隐藏文件/目录
     location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md|\.stfolder|\.stignore) {
         return 444;
     }
 
-    # 常见恶意扫描 UA（不含 curl/wget/python，避免误伤监控与 API 客户端）
+    # 常见恶意扫描 UA（不含 curl/wget/python）
     if ($http_user_agent ~* (HTTrack|nikto|sqlmap|fimap|nmap|masscan|zgrab|dirbuster)) {
         return 403;
     }
@@ -98,13 +75,11 @@ server {
 
     location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$ {
         expires 30d;
-        error_log /dev/null;
         access_log off;
     }
 
     location ~ .*\.(js|css)$ {
         expires 12h;
-        error_log /dev/null;
         access_log off;
     }
 
@@ -112,10 +87,7 @@ server {
         deny all;
     }
 
-    # 站点级可覆盖全局 ModSecurity（按需启用）
-    #modsecurity on;
-    #modsecurity_rules_file %NGINX_DIR%/conf/modsecurity/main.conf;
-
-    access_log %NGINX_DIR%/logs/%DOMAIN%.log;
+    access_log %NGINX_DIR%/logs/%DOMAIN%.log main;
+    access_log %NGINX_DIR%/logs/%DOMAIN%.json json_combined;
     error_log %NGINX_DIR%/logs/%DOMAIN%.error.log;
 }
