@@ -192,7 +192,7 @@ Secrets 挂载在容器的 `/run/secrets/` 目录下，以文件形式存在：
 
 ```bash
 # 查看容器内的 Secrets
-docker exec nginx-secure ls -la /run/secrets/
+docker exec nginx ls -la /run/secrets/
 
 # 输出示例：
 # -r--r----- 1 root root 1234 Jan 01 00:00 ssl_certificate
@@ -306,7 +306,7 @@ docker compose down
 docker compose up -d
 
 # 3. 验证
-docker exec nginx-secure openssl x509 -in /run/secrets/ssl_certificate -noout -dates
+docker exec nginx openssl x509 -in /run/secrets/ssl_certificate -noout -dates
 ```
 
 ### 自动化轮换脚本
@@ -375,7 +375,7 @@ docker compose -f docker-compose-secrets.yml up -d
 
 ```bash
 # 检查 Secrets 文件
-docker exec nginx-secure ls -la /run/secrets/
+docker exec nginx ls -la /run/secrets/
 
 # 验证 SSL 连接
 curl -k https://localhost:8443/
@@ -385,7 +385,7 @@ curl -k https://localhost:8443/
 
 ```bash
 # 确认环境变量中没有敏感信息
-docker inspect nginx-secure | grep -i "password\|secret\|key"
+docker inspect nginx | grep -i "password\|secret\|key"
 
 # 确认 Secrets 不在镜像层中
 docker history nginx-hardened:latest

@@ -1,0 +1,107 @@
+# =======================================================
+# Nginx Docker Compose - 拉取 Docker Hub 预构建镜像
+# 适用于：直接使用 GitHub Actions 预构建的镜像，无需本地编译
+# =======================================================
+#
+# 使用方法:
+#   1. 按需修改下方 image 地址
+#   2. 启动: docker compose -f docker-compose.hub.yml up -d
+#   3. 停止: docker compose -f docker-compose.hub.yml down
+#   4. 日志: docker compose -f docker-compose.hub.yml logs -f nginx
+#
+# 首次使用（私有镜像）需要登录 Docker Hub:
+#   cat ~/dockerhub_token.txt | docker login -u <username> --password-stdin
+#
+# 公开镜像可跳过登录。
+#
+# 说明:
+#   - 使用命名卷时，entrypoint 会在卷为空时从镜像种子初始化 conf/ssl/conf.d
+#   - 旧文件名 docker-compose.ghcr.yml 仍保留为兼容包装（转发到本文件）
+#
+
+services:
+  nginx:
+    # 格式: <Docker Hub用户名>/nginx:latest
+    image: ihccccom/nginx:latest
+    container_name: nginx
+
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+
+    volumes:
+      - nginx-conf:/opt/nginx/conf
+      - nginx-confd:/opt/nginx/conf.d
+      - nginx-ssl:/opt/nginx/ssl
+      - nginx-logs:/opt/nginx/logs
+      - wwwroot:/www/wwwroot
+
+    security_opt:
+      - no-new-privileges:true
+      # - seccomp=./security/seccomp/nginx-seccomp.json
+      # - apparmor=docker-nginx
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - FOWNER
+
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "4.0"
+          pids: 200
+        reservations:
+          memory: 256M
+          cpus: "0.5"
+
+    restart: unless-stopped
+
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,noexec,nosuid,size=8m
+      - /var/cache/nginx:rw,noexec,nosuid,size=512m
+
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        tag: "nginx"
+
+    shm_size: "256m"
+    hostname: nginx
+    networks:
+      - nginx-network
+
+volumes:
+  nginx-conf:
+    name: nginx-conf
+  nginx-confd:
+    name: nginx-confd
+  nginx-ssl:
+    name: nginx-ssl
+  nginx-logs:
+    name: nginx-logs
+  wwwroot:
+    name: wwwroot
+
+networks:
+  nginx-network:
+    name: nginx-network
+    driver: bridge

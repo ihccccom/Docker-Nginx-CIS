@@ -166,8 +166,8 @@ docker run --rm --net host --pid host --userns host --cap-add audit_control \
 
 | 编号 | 检查项 | 本项目实现 |
 |------|--------|-----------|
-| 4.1 | 确保为容器创建非 root 用户 | ✅ `Dockerfile` 中 `USER nginx` |
-| 4.2 | 确保容器使用可信基础镜像 | ✅ 使用官方 `alpine` 基础镜像 |
+| 4.1 | 确保为容器创建非 root 用户 | ⚠️ Nginx master 需 root 绑定 80/443；worker 以 `www-data` 运行（非 Dockerfile `USER` 全程非 root） |
+| 4.2 | 确保容器使用可信基础镜像 | ✅ 使用官方 `debian:trixie-slim` 基础镜像 |
 | 4.3 | 确保不在容器中安装不必要的软件包 | ✅ 多阶段构建，最终镜像仅包含运行时依赖 |
 | 4.4 | 确保镜像已扫描并重建以包含安全补丁 | 📋 建议集成 Trivy/Snyk 扫描 |
 | 4.5 | 确保启用 Docker 内容信任 | 📋 建议设置 `DOCKER_CONTENT_TRUST=1` |
@@ -176,7 +176,7 @@ docker run --rm --net host --pid host --userns host --cap-add audit_control \
 | 4.8 | 确保不使用 `setuid`/`setgid` 权限 | ✅ 构建时移除不必要的 setuid/setgid 位 |
 | 4.9 | 确保 Dockerfile 中使用 `COPY` 而非 `ADD` | ✅ 仅使用 `COPY` 指令 |
 | 4.10 | 确保不在 Dockerfile 中存储密钥 | ✅ 使用 Docker Secrets 管理敏感信息 |
-| 4.11 | 确保仅安装已验证的软件包 | ✅ 使用 Alpine APK 签名验证 |
+| 4.11 | 确保仅安装已验证的软件包 | ✅ 使用 Debian apt 官方源与 HTTPS 下载校验 |
 | 4.12 | 确保扫描和重建镜像以修复漏洞 | 📋 提供 CI/CD 集成指南 |
 
 ### 5.x 容器运行时
@@ -253,9 +253,10 @@ sudo systemctl restart docker
 ### FAIL: 4.1 — 容器以 root 运行
 
 ```dockerfile
-# 修复：在 Dockerfile 中添加
-RUN addgroup -S nginx && adduser -S -G nginx nginx
-USER nginx
+# 说明：本项目 Nginx master 需 root 绑定特权端口；worker 通过
+# --user=www-data 降权。若改为非特权端口映射，可再考虑 USER www-data。
+# RUN useradd -r -g www-data -s /sbin/nologin www-data
+# USER www-data
 ```
 
 ### FAIL: 5.3 — 未限制 Linux Capabilities

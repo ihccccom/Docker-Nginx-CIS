@@ -1,0 +1,55 @@
+# =======================================================
+# 静态检查：shell 语法、compose 文件、关键路径约定
+# 不构建完整镜像（完整安全验收请运行 tests/validate.sh）
+# =======================================================
+
+name: Static Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: static-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Lint scripts & compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Shell syntax check
+        run: |
+          set -euo pipefail
+          bash -n docker-entrypoint.sh
+          bash -n site.sh
+          bash -n tests/validate.sh
+          bash -n security/cis-docker-benchmark/docker-bench-check.sh
+
+      - name: Compose config validation
+        run: |
+          set -euo pipefail
+          docker compose -f docker-compose.yml config >/dev/null
+          docker compose -f docker-compose.hub.yml config >/dev/null
+          docker compose -f docker-compose.ghcr.yml config >/dev/null
+          docker compose -f deploy/docker-compose.yml config >/dev/null
+
+      - name: Guardrails
+        run: |
+          set -euo pipefail
+          # workflow 自身路径应可触发构建
+          grep -q "docker-build-push-nginx.yml" .github/workflows/docker-build-push-nginx.yml
+          grep -q "Dockerfile" .github/workflows/docker-build-push-nginx.yml
+          # 预构建 compose 必须提供 cache tmpfs
+          grep -q "/var/cache/nginx" docker-compose.hub.yml
+          grep -q "443:443/udp" docker-compose.yml
+          # 默认不再伪装第三方 CDN 品牌
+          ! grep -q 'NGINX_FAKE_NAME="CloudFlare"' Dockerfile
+          # entrypoint 需能补齐 CRS rules
+          grep -q 'ModSecurity' docker-entrypoint.sh
+          grep -q 'rules' docker-entrypoint.sh

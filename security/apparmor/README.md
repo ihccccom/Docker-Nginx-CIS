@@ -129,10 +129,11 @@ docker compose up -d
 
 | 路径 | 权限 | 说明 |
 |-----|------|------|
-| `/etc/nginx/**` | `r` (只读) | Nginx 配置文件 |
-| `/usr/share/nginx/**` | `r` (只读) | 静态资源文件 |
-| `/var/log/nginx/**` | `rw` (读写) | 日志文件 |
-| `/var/cache/nginx/**` | `rw` (读写) | 缓存目录 |
+| `/opt/nginx/conf/**` | `rw` | Nginx 配置（entrypoint 需 chmod） |
+| `/opt/nginx/conf.d/**` | `rw` | 站点配置 |
+| `/www/wwwroot/**` | `rw` | 网站根目录 |
+| `/var/cache/nginx/**` | `rw` | 缓存与 ModSecurity 临时目录 |
+| `/usr/local/modsecurity/**` | `mr` | ModSecurity 运行时库 |
 | `/var/run/nginx.pid` | `rw` (读写) | PID 文件 |
 | `/tmp/**` | `rw` (读写) | 临时文件（上传等） |
 | `/run/secrets/**` | `r` (只读) | Docker Secrets（证书、密钥） |

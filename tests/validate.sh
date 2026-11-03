@@ -200,6 +200,39 @@ test_container() {
     else
         fail "未配置日志驱动"
     fi
+
+    # 检查只读根文件系统 (CIS 5.12)
+    local readonly_root
+    readonly_root=$(echo "${inspect}" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['HostConfig'].get('ReadonlyRootfs', False))" 2>/dev/null) || readonly_root=""
+    if [[ "${readonly_root}" == "True" ]]; then
+        pass "已启用只读根文件系统 (CIS 5.12)"
+    else
+        fail "未启用只读根文件系统 (CIS 5.12)"
+    fi
+
+    # 检查容器配置用户（本镜像 master 需 root 绑端口；记录实际值便于审计）
+    local config_user
+    config_user=$(echo "${inspect}" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['Config'].get('User') or 'root')" 2>/dev/null) || config_user=""
+    if [[ -n "${config_user}" ]]; then
+        info "容器 Config.User=${config_user}（期望 master=root，worker=www-data）"
+        pass "已读取容器用户配置: ${config_user}"
+    else
+        fail "无法读取容器用户配置"
+    fi
+
+    # 检查是否配置了自定义 seccomp（可选增强项）
+    if echo "${security_opts}" | grep -qi "seccomp="; then
+        pass "已配置自定义 Seccomp Profile"
+    else
+        skip "未配置自定义 Seccomp（可选；Compose 默认注释）"
+    fi
+
+    # 检查 AppArmor profile（可选增强项）
+    if echo "${security_opts}" | grep -qi "apparmor="; then
+        pass "已配置 AppArmor Profile"
+    else
+        skip "未配置 AppArmor（可选；需宿主机加载 profile）"
+    fi
 }
 
 # ============================================================

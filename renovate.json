@@ -143,6 +143,15 @@
       "matchStrings": ["ARG MODSECURITY_VERSION=\"(?<currentValue>v[\\d.]+)\""],
       "depNameTemplate": "owasp-modsecurity/ModSecurity",
       "datasourceTemplate": "github-tags"
+    },
+    {
+      "customType": "regex",
+      "description": "ngx_brotli 提交 PIN（google/ngx_brotli 无稳定 tag，跟踪 commit）",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": ["ARG NGX_BROTLI_COMMIT=\"(?<currentDigest>[a-f0-9]+)\""],
+      "depNameTemplate": "google/ngx_brotli",
+      "datasourceTemplate": "git-refs",
+      "currentValueTemplate": "master"
     }
   ],
 

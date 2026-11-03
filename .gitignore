@@ -1,0 +1,24 @@
+# Runtime bind-mount contents (keep placeholders)
+logs/*
+!logs/.gitkeep
+ssl/*
+!ssl/.gitkeep
+wwwroot/*
+!wwwroot/.gitkeep
+conf.d/sites-enabled/*
+!conf.d/sites-enabled/.gitkeep
+
+# Generated site configs under sites-available (keep template + gitkeep)
+conf.d/sites-available/*.conf
+
+# Local secrets
+secrets/
+**/secrets/*.pem
+**/secrets/htpasswd
+security/secrets/secrets/
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
