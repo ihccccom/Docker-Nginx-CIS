@@ -604,6 +604,26 @@ docker build --build-arg NGINX_VERSION=1.30.5 -t nginx:latest .
 | 反向代理 | ~10,000 | < 20ms |
 | WAF 启用 + 反向代理 | ~6,000 | < 35ms |
 
+
+## 企业生产建议
+
+本方案可作企业边缘反向代理基线，但**合规不等于开箱即审计通过**：宿主机 daemon/auditd、证书生命周期、WAF 误报调优仍需运维落地。
+
+| 项 | 建议 |
+|----|------|
+| 镜像标签 | 使用 `nginx-<version>` 或 digest，避免长期追 `latest` |
+| Compose | `docker compose -f docker-compose.hub.yml -f docker-compose.enterprise.yml up -d` |
+| Seccomp | enterprise 叠加默认启用；AppArmor 需宿主机加载 profile |
+| 真实 IP | 编辑 `conf/real-ip.conf`，仅信任 LB/CDN 网段 |
+| DNS | 编辑 `conf/resolvers.conf` 为企业内网递归 DNS |
+| WAF | CRS 默认 Paranoia Level **2**；升到 3/4 前先 DetectionOnly 调优 |
+| 日志 | 文本 + JSON 双写；bind-mount 日志配合 `security/logrotate/` |
+| 证书 | 正式证书轮换；默认自签名仅 catch-all，周期已缩短 |
+| 扫描 | Actions：`Image Vulnerability Scan`（Trivy，手动/周更） |
+| 验收 | `bash tests/validate.sh` + CIS bench 脚本 |
+
+> Seccomp/AppArmor、userns-remap、icc=false 等宿主项见 `security/audit/daemon.json` 与对应 README；仅启动容器不等于完成 CIS Docker 全部章节。
+
 ## 许可证
 
 本项目遵循 [![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](LICENSE)

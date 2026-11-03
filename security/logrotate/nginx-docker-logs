@@ -1,0 +1,17 @@
+# 宿主机 logrotate 示例：当使用 bind-mount ./logs 时，
+# 复制到 /etc/logrotate.d/nginx-docker-logs 并按需调整路径。
+# Docker json-file 驱动另有 max-size/max-file，不覆盖本文件场景。
+
+/opt/nginx-docker/logs/*.log
+/workspace/logs/*.log
+{
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+    dateext
+    maxsize 100M
+}

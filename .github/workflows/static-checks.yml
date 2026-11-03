@@ -48,8 +48,18 @@ jobs:
           # 预构建 compose 必须提供 cache tmpfs
           grep -q "/var/cache/nginx" docker-compose.hub.yml
           grep -q "443:443/udp" docker-compose.yml
+          grep -q "stop_grace_period" docker-compose.yml
           # 默认不再伪装第三方 CDN 品牌
           ! grep -q 'NGINX_FAKE_NAME="CloudFlare"' Dockerfile
           # entrypoint 需能补齐 CRS rules
           grep -q 'ModSecurity' docker-entrypoint.sh
           grep -q 'rules' docker-entrypoint.sh
+          # 站点模板必须保持 conf/ 与 conf.d/ 同步（site.sh 优先读 conf.d）
+          diff -q conf/example.com.conf.template conf.d/sites-available/example.com.conf.template
+          # CRS 企业默认 paranoia level 2
+          grep -q 'blocking_paranoia_level=2' conf/modsecurity/crs-setup.conf
+          # 健康检查仅本机
+          grep -q 'allow 127.0.0.1' conf/nginx.conf
+          test -f conf/real-ip.conf
+          test -f conf/resolvers.conf
+          test -f docker-compose.enterprise.yml

@@ -211,6 +211,20 @@ docker compose -f docker-compose.hub.yml logs -f nginx
 docker exec nginx tail -f /opt/nginx/logs/nginx_error.log
 ```
 
+
+## 企业生产
+
+```bash
+# 预构建 + 企业叠加（Seccomp / ulimit / 优雅停机）
+docker compose -f docker-compose.hub.yml -f docker-compose.enterprise.yml up -d
+```
+
+- 真实客户端 IP：`conf/real-ip.conf`（默认关闭，防伪造）
+- DNS：`conf/resolvers.conf`（改为内网 DNS）
+- 日志：`nginx_access.log` + `nginx_access.json`；宿主机轮转见 `security/logrotate/`
+- CRS：默认 Paranoia Level 2；健康检查仅允许 `127.0.0.1`/`::1`
+- 镜像：生产改用 `nginx-<version>` 或 digest，勿长期 `latest`
+
 ## 常见问题
 
 **Q: bind-mount 后 ModSecurity 报找不到 rules？**  

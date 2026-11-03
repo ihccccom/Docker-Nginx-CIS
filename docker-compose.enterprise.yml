@@ -1,0 +1,39 @@
+# =======================================================
+# 企业生产叠加配置（配合 docker-compose.hub.yml 使用）
+# =======================================================
+#
+# 启动:
+#   docker compose -f docker-compose.hub.yml -f docker-compose.enterprise.yml up -d
+#
+# 启用内容:
+#   - 自定义 Seccomp
+#   - 更长优雅停机窗口
+#   - 明确 ulimit（匹配 worker_rlimit_nofile）
+#   - 建议使用不可变标签（请把 image 改为 nginx-<version> 或 digest）
+#
+
+services:
+  nginx:
+    # 生产请改为不可变标签，例如:
+    # image: ihccccom/nginx:nginx-1.30.5
+    # 或: image: ihccccom/nginx@sha256:...
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=./security/seccomp/nginx-seccomp.json
+      # AppArmor 需宿主机先加载 profile:
+      # sudo apparmor_parser -r -W ./security/apparmor/nginx-apparmor-profile
+      # - apparmor=docker-nginx
+
+    stop_grace_period: 45s
+    stop_signal: SIGQUIT
+
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+      nproc: 512
+
+    # 非 Swarm 场景下同时声明，避免仅依赖 deploy.*
+    mem_limit: 2g
+    cpus: 4.0
+    pids_limit: 200

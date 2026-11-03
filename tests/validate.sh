@@ -233,6 +233,15 @@ test_container() {
     else
         skip "未配置 AppArmor（可选；需宿主机加载 profile）"
     fi
+
+    # 优雅停机窗口（企业滚动发布）
+    local stop_timeout
+    stop_timeout=$(echo "${inspect}" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['Config'].get('StopTimeout') or '')" 2>/dev/null) || stop_timeout=""
+    if [[ -n "${stop_timeout}" ]]; then
+        pass "已配置 StopTimeout=${stop_timeout}"
+    else
+        info "未显式设置 StopTimeout（compose stop_grace_period 在部分环境下不写入该字段）"
+    fi
 }
 
 # ============================================================
@@ -250,6 +259,25 @@ test_nginx() {
         fail "Nginx 进程未运行"
         info "后续 Nginx 测试将被跳过"
         return
+    fi
+
+    # JSON 访问日志（企业 SIEM）
+    if docker_exec test -f "${NGINX_DIR}/logs/nginx_access.json"; then
+        pass "已启用 JSON 访问日志 nginx_access.json"
+    else
+        # 文件可能在首个请求后创建；检查配置是否声明
+        if docker_exec grep -q "json_combined" "${NGINX_DIR}/conf/nginx.conf"; then
+            pass "nginx.conf 已配置 json_combined 日志格式"
+        else
+            fail "未配置 JSON 访问日志"
+        fi
+    fi
+
+    # 健康检查本机限制
+    if docker_exec grep -A5 "location = /nginx-health" "${NGINX_DIR}/conf/nginx.conf" | grep -q "allow 127.0.0.1"; then
+        pass "健康检查端点限制为本机访问"
+    else
+        fail "健康检查端点未限制为本机访问"
     fi
 
     # 检查 Nginx 是否在 80 端口响应（使用健康检查端点）
