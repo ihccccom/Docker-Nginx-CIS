@@ -101,11 +101,15 @@ ARG EXTRA_GITHUB_MODULES=""
 # 隐藏真实 Nginx 版本信息，增强安全性
 ###############################################
 
-# 自定义服务器名称 (例如: "OWASP WAF")，留空使用默认值
-ARG NGINX_FAKE_NAME="CloudFlare"
+# 自定义服务器名称（隐藏默认 nginx 标识；勿伪装成第三方 CDN 品牌）
+# 例如: "SecureWeb"；留空则保留补丁逻辑但名称可自定
+ARG NGINX_FAKE_NAME="SecureWeb"
 
-# 自定义版本号 (例如: "5.1.24")，留空使用默认版本号
-ARG NGINX_VERSION_NUMBER="8.2.6"
+# 自定义版本号（可选；当前默认不改写 nginx.h，仅保留 ARG 以便构建覆盖）
+ARG NGINX_VERSION_NUMBER=""
+
+# ngx_brotli 提交 PIN（避免跟踪浮动 master；更新时改此值）
+ARG NGX_BROTLI_COMMIT="53e0fb55f250f48fe80c0ddbf6c0f7103cdbaae1"
 
 
 # =======================================================
@@ -140,6 +144,7 @@ ARG NGINX_FAKE_NAME
 ARG NGINX_VERSION_NUMBER
 ARG MODSECURITY_VERSION
 ARG EXTRA_GITHUB_MODULES
+ARG NGX_BROTLI_COMMIT
 
 ENV DEBIAN_FRONTEND=noninteractive \
     OPT_DIR=/opt \
@@ -257,13 +262,14 @@ RUN set -eux; \
       rm -f "openssl-${OPENSSL_VERSION}.tar.gz"; \
     fi
 
-# 下载 ngx_brotli 压缩模块
+# 下载 ngx_brotli 压缩模块（固定 commit，保证可复现构建）
 RUN set -eux; \
     if [ "${USE_ngx_brotli}" = "true" ]; then \
       cd ${NGINX_SRC_DIR}; \
-      git clone --recursive --depth 1 https://github.com/google/ngx_brotli.git; \
+      git clone --recursive https://github.com/google/ngx_brotli.git; \
       cd ngx_brotli; \
-      git submodule update --init; \
+      git checkout "${NGX_BROTLI_COMMIT}"; \
+      git submodule update --init --recursive; \
     fi
 
 # 下载 ngx_cache_purge 缓存清除模块
@@ -438,6 +444,11 @@ RUN set -eux; \
       --with-http_addition_module \
       --with-http_image_filter_module \
       --with-http_gunzip_module \
+      --without-http_autoindex_module \
+      --without-http_ssi_module \
+      --without-mail_pop3_module \
+      --without-mail_imap_module \
+      --without-mail_smtp_module \
       --with-stream \
       --with-stream_ssl_module \
       --with-stream_ssl_preread_module \
@@ -689,7 +700,8 @@ RUN chmod 500 /docker-entrypoint.sh
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
     CMD curl -sf http://127.0.0.1/nginx-health || exit 1
 
-EXPOSE 80 443
+# TCP 80/443 + UDP 443（HTTP/3 QUIC）
+EXPOSE 80 443/tcp 443/udp
 
 # 优雅停止信号
 STOPSIGNAL SIGQUIT

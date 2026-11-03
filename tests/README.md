@@ -85,7 +85,7 @@ echo "Exit code: $?"
 ### 指定容器名称
 
 ```bash
-# 默认检查名为 nginx-secure 的容器
+# 默认检查名为 nginx 的容器
 CONTAINER_NAME=my-nginx bash tests/validate.sh
 ```
 
@@ -248,7 +248,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t nginx-hardened:latest ./nginx/
+        run: docker build -t nginx-hardened:latest ./
 
       - name: Start container
         run: docker compose -f nginx/docker-compose.yml up -d
@@ -276,7 +276,7 @@ security-validation:
   services:
     - docker:dind
   script:
-    - docker build -t nginx-hardened:latest ./nginx/
+    - docker build -t nginx-hardened:latest ./
     - docker compose -f nginx/docker-compose.yml up -d
     - sleep 10
     - bash nginx/tests/validate.sh
@@ -294,7 +294,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'docker build -t nginx-hardened:latest ./nginx/'
+                sh 'docker build -t nginx-hardened:latest ./'
             }
         }
         stage('Deploy') {
@@ -324,7 +324,7 @@ pipeline {
 ==========================================
   Nginx 安全容器验证报告
   日期: 2024-01-15 10:30:00
-  容器: nginx-secure
+  容器: nginx
 ==========================================
 
 --- 容器安全测试 ---

@@ -45,66 +45,20 @@
 ## 目录结构
 
 ```
-.github/
-└── workflows/
-    └── docker-build-push.yml          # GitHub Actions 构建并发布到 Docker Hub
-
-nginx/
-├── Dockerfile                         # 多阶段 Docker 构建（源码编译 Nginx + ModSecurity）
-├── docker-compose.yml                 # Docker Compose - 本地构建用
-├── docker-compose.ghcr.yml            # Docker Compose - 拉取 Docker Hub 预构建镜像用
-├── docker-entrypoint.sh               # 容器入口脚本（权限检查）
-├── .dockerignore                      # 构建上下文排除规则
-├── README.md                          # 📖 编译构建教程（本文件）
-├── DOCKER-USAGE.md                    # 📖 Docker 使用教程（可独立发布）
-│
-├── conf/                              # Nginx 配置文件（内置，构建时 COPY 到镜像）
-│   ├── nginx.conf                    # Nginx 主配置文件
-│   ├── proxy.conf                    # 反向代理和缓存配置
-│   ├── index.html                    # 默认首页
-│   ├── php/
-│   │   ├── pathinfo.conf            # PHP Pathinfo 支持
-│   │   └── enable-php-84.conf       # PHP 8.4 FastCGI 配置
-│   └── modsecurity/
-│       ├── modsecurity.conf         # ModSecurity 主配置
-│       ├── main.conf                # OWASP 规则引入配置
-│       ├── crs-setup.conf           # OWASP CRS 偏好设置
-│       ├── hosts.allow              # IP 白名单
-│       └── hosts.deny               # IP 黑名单
-│
-├── security/                          # 安全配置目录
-│   ├── seccomp/
-│   │   ├── nginx-seccomp.json        # Seccomp 系统调用白名单
-│   │   └── README.md                 # 📖 Seccomp 配置说明
-│   ├── apparmor/
-│   │   ├── nginx-apparmor-profile    # AppArmor 强制访问控制策略
-│   │   └── README.md                 # 📖 AppArmor 配置说明
-│   ├── secrets/
-│   │   ├── docker-compose-secrets.yml # Docker Secrets 集成示例
-│   │   └── README.md                 # 📖 Secrets 管理说明
-│   ├── audit/
-│   │   ├── docker-audit.rules        # Auditd 审计规则
-│   │   ├── daemon.json               # Docker 守护进程安全配置
-│   │   ├── daemon.json.comments      # daemon.json 配置项注释说明
-│   │   └── README.md                 # 📖 日志与审计说明
-│   ├── cis-docker-benchmark/
-│   │   ├── docker-bench-check.sh     # CIS Docker Benchmark 自动检查脚本
-│   │   └── README.md                 # 📖 CIS Docker 基准清单
-│   ├── cis-nginx-benchmark/
-│   │   └── README.md                 # 📖 CIS Nginx 基准清单
-│   ├── pci-dss/
-│   │   └── README.md                 # 📖 PCI DSS 合规对照
-│   └── performance/
-│       └── README.md                 # 📖 性能调优指南
-│
-├── deploy/                            # 部署包（可发布到其他仓库供用户使用）
-│   ├── README.md                     # Docker 使用教程
-│   ├── docker-compose.yml            # 用户部署用 Compose 文件
-│   └── security/                     # 安全配置（Seccomp/AppArmor）
-│
-└── tests/
-    ├── validate.sh                   # 自动化安全验证脚本
-    └── README.md                     # 📖 测试说明
+.
+├── Dockerfile                         # 多阶段构建（源码编译 Nginx + ModSecurity）
+├── docker-compose.yml                 # 本地构建用 Compose
+├── docker-compose.hub.yml             # 拉取 Docker Hub 预构建镜像
+├── docker-compose.ghcr.yml            # hub.yml 兼容别名（历史文件名）
+├── docker-entrypoint.sh               # 入口：种子初始化 / CRS 补齐 / 权限 / nginx -t
+├── site.sh                            # 站点自动化（acme.sh / DNS / WordPress）
+├── README.md / DOCKER-USAGE.md
+├── conf/                              # 构建时 COPY；也可 bind-mount（缺 rules 时 entrypoint 补齐）
+├── conf.d/ ssl/ logs/ wwwroot/        # 宿主机挂载占位目录
+├── security/                          # Seccomp / AppArmor / CIS / PCI / Secrets
+├── deploy/                            # 可独立分发的部署包
+├── tests/validate.sh                  # 安全验证
+└── .github/workflows/                 # 镜像构建 + 静态检查
 ```
 
 ## 快速开始
@@ -116,16 +70,14 @@ nginx/
 镜像由 GitHub Actions 自动构建并发布到 Docker Hub，无需本地编译。
 
 ```bash
-cd nginx
-
-# 拉取并启动（需先修改 docker-compose.ghcr.yml 中的镜像地址）
-docker compose -f docker-compose.ghcr.yml up -d
+# 拉取并启动（推荐 docker-compose.hub.yml；ghcr.yml 为兼容别名）
+docker compose -f docker-compose.hub.yml up -d
 
 # 查看容器状态
-docker compose -f docker-compose.ghcr.yml ps
+docker compose -f docker-compose.hub.yml ps
 
 # 查看日志
-docker compose -f docker-compose.ghcr.yml logs -f nginx
+docker compose -f docker-compose.hub.yml logs -f nginx
 ```
 
 > 📖 详细教程请参阅下方 [GitHub Actions 构建与 Docker Hub 拉取教程](#github-actions-构建与-docker-hub-拉取教程)
@@ -135,7 +87,6 @@ docker compose -f docker-compose.ghcr.yml logs -f nginx
 在本地从源码编译 Nginx 及所有模块（编译耗时约 15-30 分钟）。
 
 ```bash
-cd nginx
 
 # 构建镜像
 docker compose build
@@ -176,7 +127,7 @@ docker logs nginx
 
 #### 概述
 
-本项目提供 GitHub Actions 工作流（`.github/workflows/docker-build-push.yml`），自动编译 Nginx Docker 镜像并发布到 Docker Hub。你只需在本地拉取预构建好的镜像即可使用，无需本地编译。
+本项目提供 GitHub Actions 工作流（`.github/workflows/docker-build-push-nginx.yml`），自动编译 Nginx Docker 镜像并发布到 Docker Hub。你只需在本地拉取预构建好的镜像即可使用，无需本地编译。
 
 **优势**：
 - ✅ 无需本地编译，节省时间和资源
@@ -193,7 +144,7 @@ docker logs nginx
 | `DOCKERHUB_USERNAME` | Docker Hub 用户名（例如 `ihccccom`） |
 | `DOCKERHUB_TOKEN` | Docker Hub Access Token（在 Docker Hub → Account Settings → Security 中创建） |
 
-> ⚠️ 三个镜像（Nginx、PHP-FPM、Redis）共用同一组 Secrets，只需配置一次。
+> 配置 Docker Hub 用户名与 Token 后即可构建推送本仓库 Nginx 镜像。
 
 #### 步骤 2：启用 GitHub Actions
 
@@ -237,16 +188,14 @@ rm ~/.dockerhub_token
 #### 步骤 6：本地拉取并运行
 
 ```bash
-cd nginx
-
-# 方式一：使用 docker-compose.ghcr.yml（推荐）
-# 先编辑 docker-compose.ghcr.yml，修改 image 为你的镜像地址
+# 方式一：使用 docker-compose.hub.yml（推荐）
+# 先编辑 docker-compose.hub.yml，修改 image 为你的镜像地址
 # image: ihccccom/nginx:latest
-docker compose -f docker-compose.ghcr.yml up -d
+docker compose -f docker-compose.hub.yml up -d
 
 # 方式二：手动拉取并运行
 docker pull ihccccom/nginx:latest
-docker run -d -p 80:80 -p 443:443 --name nginx ihccccom/nginx:latest
+docker run -d -p 80:80 -p 443:443 -p 443:443/udp --name nginx ihccccom/nginx:latest
 ```
 
 #### 步骤 7：验证
@@ -269,7 +218,7 @@ docker logs nginx
 | `latest` | 推送到 main 分支 | `nginx:latest` |
 | `v1.0.0` | 创建 v1.0.0 标签 | `nginx:v1.0.0` |
 | `1.0` | 创建 v1.0.x 标签 | `nginx:1.0` |
-| `nginx-1.28.2` | 所有构建 | `nginx:nginx-1.28.2` |
+| `nginx-1.30.5` | 所有构建 | `nginx:nginx-1.30.5` |
 
 ---
 
@@ -284,8 +233,8 @@ docker logs nginx
 #### 步骤 1：克隆仓库
 
 ```bash
-git clone https://github.com/mzwrt/copilot.git
-cd copilot/nginx
+git clone https://github.com/ihccccom/Docker-Nginx-CIS.git
+cd Docker-Nginx-CIS
 ```
 
 #### 步骤 2：（可选）自定义构建参数
@@ -299,11 +248,11 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NGINX_VERSION: "1.28.2"
-        OPENSSL_VERSION: "3.5.5"
+        NGINX_VERSION: "1.30.5"
+        OPENSSL_VERSION: "3.5.8"
         USE_modsecurity: "true"
         USE_owasp: "true"
-        NGINX_FAKE_NAME: "MyServer"
+        NGINX_FAKE_NAME: "SecureWeb"
 ```
 
 或者通过命令行传入构建参数：
@@ -454,7 +403,7 @@ docker exec -it nginx /bin/bash
 │  │  └────────────────────────────────────────────────┘  │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                                                             │
-│  端口映射: 80→80 (HTTP), 443→443 (HTTPS)                    │
+│  端口映射: 80→80 (HTTP), 443/tcp+udp→443 (HTTPS/HTTP3)      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -472,20 +421,18 @@ docker exec -it nginx /bin/bash
 | `USE_PCRE2` | `true` | 启用 PCRE2 正则模块 |
 | `USE_ngx_cache_purge` | `true` | 启用缓存清除模块 |
 | `USE_ngx_http_headers_more_filter_module` | `true` | 启用自定义响应头模块 |
-| `USE_ngx_http_proxy_connect_module` | `true` | 启用正向代理 CONNECT 模块 |
-| `USE_ngx_fancyindex` | `false` | 启用美化目录浏览模块 |
+| `USE_ngx_fancyindex` | `true` | 启用美化目录浏览模块 |
 
 ### 版本配置（留空自动获取最新版）
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `NGINX_VERSION` | `1.28.2` | Nginx 版本号（必须指定） |
-| `OPENSSL_VERSION` | `3.5.5` | OpenSSL 版本号（必须指定） |
-| `PCRE2_VERSION` | `""` | PCRE2 版本，留空自动获取最新版 |
-| `FANCYINDEX_VERSION` | `0.5.2` | ngx-fancyindex 版本号 |
+| `NGINX_VERSION` | `1.30.5` | Nginx 版本号（必须指定） |
+| `OPENSSL_VERSION` | `3.5.8` | OpenSSL 版本号（必须指定） |
+| `PCRE2_VERSION` | `pcre2-10.47` | PCRE2 版本，留空可自动获取 |
+| `FANCYINDEX_VERSION` | `0.6.0` | ngx-fancyindex 版本号 |
 | `NGX_CACHE_PURGE_VERSION` | `""` | ngx_cache_purge 版本，留空自动获取 |
 | `HEADERS_MORE_VERSION` | `""` | headers-more 版本，留空自动获取 |
-| `PROXY_CONNECT_VERSION` | `""` | proxy_connect 版本，留空自动获取 |
 | `MODSECURITY_NGINX_VERSION` | `""` | ModSecurity-nginx 版本，留空使用最新 |
 | `OWASP_CRS_VERSION` | `""` | OWASP CRS 版本，留空自动获取最新 |
 
@@ -493,8 +440,8 @@ docker exec -it nginx /bin/bash
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `NGINX_FAKE_NAME` | `"CloudFlare"` | 自定义服务器名称（伪装），留空使用默认值 |
-| `NGINX_VERSION_NUMBER` | `"8.2.6"` | 自定义版本号（伪装 nginx.h 中的版本），留空使用默认版本号 |
+| `NGINX_FAKE_NAME` | `"SecureWeb"` | 自定义 Server 标识（勿伪装第三方 CDN） |
+| `NGINX_VERSION_NUMBER` | `""` | 可选；当前默认不改写 nginx.h |
 | `EXTRA_CC_OPT` | `""` | 额外 C 编译选项 |
 | `EXTRA_NGINX_MODULES` | `""` | 额外 Nginx 模块参数（如 `--add-module=/path/to/mod`） |
 
@@ -502,19 +449,19 @@ docker exec -it nginx /bin/bash
 
 ```bash
 # 基本构建
-docker build -t nginx:latest ./nginx/
+docker build -t nginx:latest .
 
 # 禁用 ModSecurity
-docker build --build-arg USE_modsecurity=false -t nginx:latest ./nginx/
+docker build --build-arg USE_modsecurity=false -t nginx:latest .
 
 # 自定义服务器名称和伪装版本号
-docker build --build-arg NGINX_FAKE_NAME="MyServer" --build-arg NGINX_VERSION_NUMBER="5.1.24" -t nginx:latest ./nginx/
+docker build --build-arg NGINX_FAKE_NAME="SecureWeb" -t nginx:latest .
 
 # 指定特定插件版本
-docker build --build-arg HEADERS_MORE_VERSION="0.37" --build-arg OWASP_CRS_VERSION="v4.7.0" -t nginx:latest ./nginx/
+docker build --build-arg HEADERS_MORE_VERSION="0.40" --build-arg OWASP_CRS_VERSION="v4.29.0" -t nginx:latest .
 
 # 添加额外自定义模块
-docker build --build-arg EXTRA_NGINX_MODULES="--add-module=/opt/nginx/src/my_module" -t nginx:latest ./nginx/
+docker build --build-arg EXTRA_NGINX_MODULES="--add-module=/opt/nginx/src/my_module" -t nginx:latest .
 ```
 
 ## 卷挂载说明
@@ -526,8 +473,12 @@ docker build --build-arg EXTRA_NGINX_MODULES="--add-module=/opt/nginx/src/my_mod
 | `nginx-ssl` | `/opt/nginx/ssl` | SSL 证书文件 |
 | `nginx-logs` | `/opt/nginx/logs` | 日志文件 |
 | `wwwroot` | `/www/wwwroot` | 网站根目录 |
-| `owasp` | `/opt/owasp` | OWASP 规则集 |
-| `nginx-cache` | `/var/cache/nginx` | Nginx 缓存目录 |
+| （tmpfs） | `/var/cache/nginx` | 缓存与 ModSecurity 临时目录（compose 默认 512m） |
+
+
+> **说明**：Seccomp / AppArmor 在 Compose 中默认注释。启用前请先在宿主机加载 AppArmor profile，并确认与 entrypoint 权限修复兼容。详见 `security/seccomp/` 与 `security/apparmor/`。
+>
+> **bind-mount `./conf`**：仓库内不包含 OWASP CRS `rules/`（构建时写入镜像）。entrypoint 发现缺失时会从 `/opt/config-seed` 自动补齐。
 
 ## 安全配置详情
 
@@ -547,6 +498,7 @@ services:
       - SETUID            # 切换用户（master→worker）
       - SETGID            # 切换用户组
       - DAC_OVERRIDE      # 文件权限覆盖
+      - FOWNER            # chmod
 
     # 安全选项
     security_opt:
@@ -625,7 +577,7 @@ SecRuleRemoveById 942100  # 排除特定规则
 
 **A**: 修改 Dockerfile 中的 `NGINX_VERSION` 参数并重新构建：
 ```bash
-docker build --build-arg NGINX_VERSION=1.28.2 -t nginx:latest ./nginx/
+docker build --build-arg NGINX_VERSION=1.30.5 -t nginx:latest .
 ```
 
 或使用 GitHub Actions 手动触发构建时指定版本。

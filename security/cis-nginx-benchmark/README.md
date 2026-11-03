@@ -49,24 +49,24 @@ CIS Nginx Benchmark 是由互联网安全中心发布的 Nginx 专用安全配�
 ./configure \
   --with-http_ssl_module \           # SSL/TLS 支持（必需）
   --with-http_v2_module \            # HTTP/2 支持
+  --with-http_v3_module \            # HTTP/3 / QUIC
   --with-http_realip_module \        # 获取真实客户端 IP
   --with-http_gzip_static_module \   # 静态 Gzip 压缩
   --with-http_stub_status_module \   # 状态监控
   --without-http_autoindex_module \  # 禁用目录列表
   --without-http_ssi_module \        # 禁用 SSI
-  --without-http_scgi_module \       # 禁用 SCGI
-  --without-http_uwsgi_module \      # 禁用 uWSGI
-  --without-http_grpc_module \       # 禁用 gRPC
   --without-mail_pop3_module \       # 禁用 POP3
   --without-mail_imap_module \       # 禁用 IMAP
   --without-mail_smtp_module         # 禁用 SMTP
+# 说明：仍保留 stream / image_filter 等按需模块；SCGI/uWSGI/gRPC
+# 未强制 --without（参数文件仍随官方安装拷贝，默认配置不启用）。
 ```
 
 | 检查项 | 编号 | 状态 | 说明 |
 |--------|------|------|------|
-| 禁用不必要的 HTTP 模块 | 2.1.1 | ✅ | 使用 `--without-*` 编译选项 |
+| 禁用不必要的 HTTP 模块 | 2.1.1 | ✅ | `--without-http_autoindex/ssi` + 源码控制 |
 | 禁用邮件代理模块 | 2.1.2 | ✅ | `--without-mail_*_module` |
-| 确保仅启用必要模块 | 2.1.3 | ✅ | 源码编译，完全控制模块列表 |
+| 确保仅启用必要模块 | 2.1.3 | ✅ | 源码编译，ARG 开关控制第三方模块 |
 | 禁用 HTTP autoindex | 2.1.4 | ✅ | `--without-http_autoindex_module` |
 
 #### 验证

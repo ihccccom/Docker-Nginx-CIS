@@ -1,0 +1,163 @@
+# 监听 80 端口，重定向所有 HTTP 请求到 HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name %DOMAIN%;
+    return 301 https://$host$request_uri;
+}
+
+# 监听 443 端口，启用 HTTP/3 和 SSL 配置
+server {
+    listen 443 quic;
+    listen [::]:443 quic;
+    http3 on;
+    quic_retry on;
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+
+    server_name %DOMAIN%;
+    index index.html index.php;
+    root /www/wwwroot/%DOMAIN%;
+
+    # 当用户通过 HTTP 请求访问时，返回 497 状态码，要求使用 HTTPS
+    error_page 497 https://$host$request_uri;
+
+    # HTTP/3 特定头部，帮助浏览器发现 HTTP/3
+    add_header Alt-Svc 'h3=":443"; ma=86400'; 
+
+    # QUIC 设置
+    http3_max_concurrent_streams 128;
+
+    # SSL 配置
+    ssl_certificate %NGINX_DIR%/ssl/%DOMAIN%/fullchain.pem;
+    ssl_certificate_key %NGINX_DIR%/ssl/%DOMAIN%/privkey.pem;
+
+    # 强制使用强椭圆曲线
+    ssl_ecdh_curve X25519:secp384r1;
+    
+    # SSL 会话配置
+    ssl_session_timeout 10m;
+    ssl_session_cache shared:MozSSL:10m;  # 关于 40000 个会话
+    ssl_session_tickets on;
+
+    # 使用自定义的 Diffie-Hellman 参数（更安全的密钥交换）
+    # openssl dhparam -out %NGINX_DIR%/ssl/dhparam.pem 2048
+    # chmod 400  %NGINX_DIR%/ssl/dhparam.pem
+    ssl_dhparam %NGINX_DIR%/ssl/dhparam.pem;
+
+    # 启用的 SSL 协议和加密套件
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+
+    # 启用 OCSP stapling，提高证书验证效率
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # 配置用于 OCSP 响应验证的受信任证书
+    ssl_trusted_certificate %NGINX_DIR%/ssl/%DOMAIN%/ca.pem;
+
+    # 配置 DNS 解析器
+    resolver 8.8.8.8 9.9.9.9 1.1.1.1 valid=300s;
+    resolver_timeout 5s;
+
+    # 引入通用 add_header 头
+    include %NGINX_DIR%/conf/security-headers-common.conf;
+
+    # 防止点击劫持攻击
+    add_header X-Frame-Options "DENY" always;
+
+    # 配置内容安全策略（CSP）
+    # 安全警示：CSP 目前基本挡不住 XSS，其中unsafe-inline + unsafe-eval + 任意 https:/data: 来源，等于说"只要是 HTTPS 我都信"，为了网站统计和相关站外文件
+    add_header Content-Security-Policy "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; style-src 'self' 'unsafe-inline' https: data:; img-src 'self' https: data:; font-src 'self' https: data:; frame-src 'self' https: data:; connect-src 'self' https: data: https://api.wordpress.org; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; upgrade-insecure-requests; block-all-mixed-content;" always;
+
+
+
+    # 限制每个 IP 的连接数（可选）
+    #limit_conn_zone $binary_remote_addr zone=limitperip:10m; 
+    #limit_conn limitperip 40;
+
+    # 限制只允许 POST PUT 和 DELETE OPTIONS 方法，其他方法拒绝
+    # 启用每个IP的速率限制
+    location / {
+
+    # 应启用速率限制来限制 IP 地址在给定时间段内向服务器发出的请求数量。应根据应用程序的需求和组织政策设置配置值。
+    # 限制每个 IP 的请求速率（可选）
+    #limit_req_zone $binary_remote_addr zone=ratelimit:10m rate=5r/s;
+    #limit_req zone=ratelimit burst=10 nodelay;
+
+    # 限制只允许 POST PUT 和 DELETE OPTIONS 请求
+    try_files $uri $uri/ /index.php?$args;
+    
+    # 只放行 WordPress 实际会用到的方法（含 REST API 编辑/删除）
+    # 其余方法（TRACE、CONNECT、WebDAV 系列等）一律拒绝
+    limit_except GET HEAD POST PUT PATCH DELETE OPTIONS {
+        deny all;
+    }
+
+    }
+
+    # 限制非法 Host 头的请求
+    # 最简单的防盗链 修改为自己的域名 否则会导致网站不能访问
+    #if ($host !~ ^(example\.com|www\.example\.com)$ ) {
+    #    return 444;
+    #}
+
+    # wordpress
+    # 这条根据规则必须在引入enable-php-8X.conf之前
+    location ~* ^/wp-content/uploads/.*\.php$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    
+    # 开启 PHP
+    # 默认是注释掉的 安装了 PHP 可以打开 默认使用 PHP 8.4
+    #include enable-php-84.conf;
+
+    # 禁止访问隐藏文件（如 .htaccess、.git 等）
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md|\.stfolder|\.stignore|\.well-known) {
+        return 444;
+    }
+
+    # 拒绝常见爬虫的 User-Agent
+    if ($http_user_agent ~* (HTTrack|crawler|scrapy|wget|curl|python|nikto|sqlmap|fimap|nmap|masscan)) {
+        return 403;
+    }
+
+    # 禁止上传不安全的文件
+    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {
+        return 403;
+    }
+
+    # 配置图片文件缓存
+    location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$ {
+        expires 30d;
+        error_log /dev/null;
+        access_log /dev/null;
+    }
+
+    # 配置静态文件缓存
+    location ~ .*\.(js|css)$ {
+        expires 12h;
+        error_log /dev/null;
+        access_log /dev/null; 
+    }
+
+    # 禁止访问隐藏文件（如 .htaccess、.htpasswd、.DS_Store 等）
+    location ~ /\. {
+        deny all;
+    }
+
+    # 启用 ModSecurity 并加载规则
+    #modsecurity on;
+    #modsecurity_rules_file %NGINX_DIR%/conf/modsecurity/%DOMAIN%.conf;
+    #modsecurity_rules_file %NGINX_DIR%/conf/modsecurity/main.conf;
+
+
+    # 配置日志文件
+    access_log %NGINX_DIR%/logs/%DOMAIN%.log;
+    error_log %NGINX_DIR%/logs/%DOMAIN%.error.log;
+}
