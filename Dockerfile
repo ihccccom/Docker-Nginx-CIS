@@ -22,7 +22,7 @@
 ###############################################
 
 # ngx-fancyindex 美化目录浏览模块
-ARG USE_ngx_fancyindex=false
+ARG USE_ngx_fancyindex=true
 
 # PCRE2 正则表达式模块
 ARG USE_PCRE2=true
