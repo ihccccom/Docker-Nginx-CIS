@@ -170,6 +170,7 @@
       ],
       "matchStrings": ["ARG NGX_BROTLI_COMMIT=\"(?<currentDigest>[a-f0-9]+)\""],
       "depNameTemplate": "google/ngx_brotli",
+      "packageNameTemplate": "https://github.com/google/ngx_brotli",
       "datasourceTemplate": "git-refs",
       "currentValueTemplate": "master"
     }
