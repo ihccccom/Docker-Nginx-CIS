@@ -71,7 +71,7 @@ ARG FANCYINDEX_VERSION=0.6.0
 ARG NGX_CACHE_PURGE_VERSION="2.3"
 
 # headers-more-nginx-module 版本 (留空自动获取最新版, 例如: "0.38")
-ARG HEADERS_MORE_VERSION="0.40"
+ARG HEADERS_MORE_VERSION="0.41"
 
 # ModSecurity-nginx 连接器版本 (留空使用最新版, 例如: "v1.0.3")
 ARG MODSECURITY_NGINX_VERSION="v1.0.4"
