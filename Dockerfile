@@ -77,10 +77,10 @@ ARG HEADERS_MORE_VERSION="0.41"
 ARG MODSECURITY_NGINX_VERSION="v1.0.4"
 
 # OWASP CRS 规则集版本 (留空自动获取最新版, 例如: "v4.8.0")
-ARG OWASP_CRS_VERSION="v4.29.0"
+ARG OWASP_CRS_VERSION="v4.30.0"
 
 # ModSecurity 核心引擎版本
-ARG MODSECURITY_VERSION="v3.0.16"
+ARG MODSECURITY_VERSION="v3.0.17"
 
 
 ###############################################
