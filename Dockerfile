@@ -22,7 +22,7 @@
 ###############################################
 
 # ngx-fancyindex 美化目录浏览模块
-ARG USE_ngx_fancyindex=true
+ARG USE_ngx_fancyindex=false
 
 # PCRE2 正则表达式模块
 ARG USE_PCRE2=true
@@ -444,7 +444,6 @@ RUN set -eux; \
       --with-http_addition_module \
       --with-http_image_filter_module \
       --with-http_gunzip_module \
-      --without-http_autoindex_module \
       --without-http_ssi_module \
       --without-mail_pop3_module \
       --without-mail_imap_module \
