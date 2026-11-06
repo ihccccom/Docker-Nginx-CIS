@@ -38,23 +38,27 @@ if [ -d "${MODSEC_SEED}" ]; then
 fi
 
 # 1. 同步 sites-available → sites-enabled（仅为从未处理过的新配置创建软链，不覆盖用户手动禁用的站点）
+# 开启站点使用.conf后缀，关闭站点修改为其他后缀会自动删除软连
 AVAILABLE_DIR="${NGINX_DIR}/conf.d/sites-available"
 ENABLED_DIR="${NGINX_DIR}/conf.d/sites-enabled"
-mkdir -p "${AVAILABLE_DIR}" "${ENABLED_DIR}"
-if [ -d "${AVAILABLE_DIR}" ]; then
-    for conf_file in "${AVAILABLE_DIR}"/*.conf; do
-        [ -e "${conf_file}" ] || continue
-        base_name=$(basename "${conf_file}")
-        link_path="${ENABLED_DIR}/${base_name}"
-        marker_path="${ENABLED_DIR}/.${base_name}.seen"
-        if [ ! -e "${marker_path}" ]; then
-            ln -sf "../sites-available/${base_name}" "${link_path}"
-            touch "${marker_path}"
-        fi
-    done
-    find "${ENABLED_DIR}" -maxdepth 1 -name "*.conf" -xtype l -delete 2>/dev/null || true
-fi
 
+mkdir -p "${AVAILABLE_DIR}" "${ENABLED_DIR}"
+
+# 自动启用所有 .conf 配置
+for conf_file in "${AVAILABLE_DIR}"/*.conf; do
+    [ -f "${conf_file}" ] || continue
+
+    base_name=$(basename "${conf_file}")
+
+    ln -sfn "../sites-available/${base_name}" \
+        "${ENABLED_DIR}/${base_name}"
+done
+
+# 清理失效软链接
+find "${ENABLED_DIR}" -maxdepth 1 \
+    -type l -name "*.conf" -xtype l -delete
+
+    
 # 2. 修复主配置与子目录权限
 find ${NGINX_DIR}/conf -type d -exec chmod 700 {} \;
 find ${NGINX_DIR}/conf -type f -exec chmod 600 {} \;
