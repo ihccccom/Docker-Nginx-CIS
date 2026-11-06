@@ -31,11 +31,11 @@ services:
       - "443:443/udp"
 
     volumes:
-      - nginx-conf:/opt/nginx/conf
-      - nginx-confd:/opt/nginx/conf.d
-      - nginx-ssl:/opt/nginx/ssl
-      - nginx-logs:/opt/nginx/logs
-      - wwwroot:/www/wwwroot
+      - ./nginx-conf:/opt/nginx/conf
+      - ./nginx-confd:/opt/nginx/conf.d
+      - ./nginx-ssl:/opt/nginx/ssl
+      - ./nginx-logs:/opt/nginx/logs
+      - ./wwwroot:/www/wwwroot
 
     security_opt:
       - no-new-privileges:true
