@@ -499,7 +499,9 @@ RUN groupadd -r www-data 2>/dev/null || true \
     && useradd -r -g www-data -s /sbin/nologin -d /nonexistent www-data 2>/dev/null || true
 
 # CIS Docker 4.3 - 仅安装必要的运行时依赖（最小化）
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update \
+    && apt-get -y upgrade --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
     ca-certificates \
     libjemalloc2 \
     libgd3 \
