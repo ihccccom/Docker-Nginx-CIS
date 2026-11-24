@@ -56,7 +56,7 @@ ARG USE_modsecurity_nginx=true
 ###############################################
 
 # Nginx 版本 (必须手动指定)
-ARG NGINX_VERSION=1.30.7
+ARG NGINX_VERSION=1.30.8
 
 # OpenSSL 版本 (必须手动指定)
 ARG OPENSSL_VERSION=3.5.9
